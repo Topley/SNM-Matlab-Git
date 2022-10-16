@@ -1,0 +1,329 @@
+clear all
+close all
+clc
+%% First section needs to be run "twice"
+% first with supdata variable uncommented in the modified_suphold dir
+% secondly with flexdata variable uncommented in the modified_suphold dir
+% "flexdata" & "supdata" are the ONLY variables needed to plot the rest of the script
+
+filenames = dir('*coher_v2*.mat');
+allexpnames = [];
+
+for i = 1:length(filenames)
+    Under = strfind(filenames(i).name,'_');
+    allexpnames{i} = filenames(i).name(1:(Under(1)-1)); 
+end
+expnames = unique(allexpnames);
+for i = 1:length(expnames)
+    loopnames = dir([expnames{i} '*coher*.mat']);
+    loopz = [];
+    for j = 1:length(loopnames)
+        load(loopnames(j).name)
+        if MUNumber>2            
+            loopz = [loopz, ((z))];
+        end
+    end
+       
+%     supdata{i,1} = expnames{i};   %these need to be manually (un)commented when folder change from flex to sup
+%     supdata{i,2} = mean(loopz,2); %these need to be manually (un)commented when folder change from flex to sup
+%     supdata{i,2}(supdata{i,2}<=0) = 0; %these need to be manually (un)commented when folder change from flex to sup
+
+  
+    flexdata{i,1} = expnames{i}; %these need to be manually (un)commented when folder change from flex to sup
+    flexdata{i,2} = mean(loopz,2);%these need to be manually (un)commented when folder change from flex to sup
+    flexdata{i,2}(flexdata{i,2}<=0) = 0;%these need to be manually (un)commented when folder change from flex to sup
+
+
+end
+
+
+ clearvars -except F flexdata supdata 
+ 
+ %%
+ %Helpful Definitions
+%  COHT = coherence function
+%  COF = standard confidence interval
+%  COF2 = peak COHT > 500
+%  z = z transformed COHT
+%  COFz = standard z tansform confidence interval
+%  COF2z = peak z transform COHT > 500   
+% c=1
+% for i=1:length(supdata)% create new variables for flex and sup data that is easier to use
+%            try
+%         loopsupdata(c,:) = supdata{i,2}; 
+%         c = c+1;
+%     end
+% end
+% loopsupdata(loopsupdata<0) = 0;
+c=1
+for i=1:length(flexdata) 
+     try
+    loopflexdata(c,:) = flexdata{i,2};
+    c = c+1;
+    end
+end
+loopflexdata(loopflexdata<0) = 0;
+% counts should = number of subjects
+counts = [1,2,3];%...
+%             1,2,3,4,5,6,7,8,9,10,11];
+
+        tableau =     [0.1216    0.4667    0.7059
+    0.6824    0.7804    0.9098
+    1.0000    0.4980    0.0549
+    1.0000    0.7333    0.4706
+    0.1725    0.6275    0.1725
+    0.5961    0.8745    0.5412
+    0.8392    0.1529    0.1569
+    1.0000    0.5961    0.5882
+    0.5804    0.4039    0.7412
+    0.7725    0.6902    0.8353
+    0.5490    0.3373    0.2941
+    0.7686    0.6118    0.5804
+    0.8902    0.4667    0.7608
+    0.9686    0.7137    0.8235
+    0.4980    0.4980    0.4980
+    0.7804    0.7804    0.7804
+    0.7373    0.7412    0.1333
+    0.8588    0.8588    0.5529
+    0.0902    0.7451    0.8118
+    0.6196    0.8549    0.8980];
+
+       
+for i = 1:length(counts)
+    
+%     figure(1);hold all
+%     plot(F,supdata{counts(2,i),2},'Color', tableau(4,:));
+%     xlim([0 100])
+%     title('Supination, n=11')
+%     movegui('northwest');
+%     allsup(i,:)=supdata{counts(2,i),2};
+    
+    figure(2);hold all
+    plot(F,flexdata{counts(1,i),2}, 'Color', tableau(2,:) );
+    xlim([0 100])
+    title('Flexion, n=11')
+    movegui('northeast');
+    allflex(i,:)=flexdata{counts(1,i),2};
+    
+%     figure(3); hold all
+%     plot(F,flexdata{counts(1,i),2}-supdata{counts(2,i),2})
+%     xlim([0 100])
+%     allsub(i,:) = flexdata{counts(1,i),2}-supdata{counts(2,i),2};
+
+end
+
+% figure(1)
+% plot(F,mean(allsup),'Color', tableau(3,:),'LineWidth',2)
+% xlim([0 100])
+figure(2)
+plot(F,mean(allflex),'Color', tableau(1,:),'LineWidth',2)
+xlim([0 100])
+figure(3)
+plot(F,mean(allsub),'k','LineWidth',2)
+title('AVG DIFFERENCE in Coherence, n=11')
+xlabel('Frequency (Hz)') 
+ylabel('Coherence (z)') 
+xlim([0 100])
+
+ 
+figure; hold all
+% plot(F,mean(allsup),'Color', tableau(3,:),'LineWidth',2)
+plot(F,mean(allflex),'Color', tableau(1,:),'LineWidth',2)
+xlabel('Frequency (Hz)') 
+ylabel('Coherence (z)') 
+title('AVG Coherence (Flex vs Sup), n=11')
+xlim([0 100])
+
+% difference between avg coherence levels (seems to even out around 50 Hz)
+figure(9); hold all
+bar(mean(allsup(:,F>0 & F<20),2) - mean(allflex(:,F>0 & F<20),2))
+title('AVG DIFFERENCE in Coherence btwn 0 - 20 Hz')
+
+[h,p,ci,stats] = ttest(mean(allsup(:,F>0 & F<20),2),mean(allflex(:,F>0 & F<20),2))
+%%
+%  clear all;
+clear vars 
+  t = tiledlayout(1,3)
+tabcolor = 5;
+title(t,'DF Feedback Coherence');
+
+rootDir = cd;
+filenames = dir(fullfile(rootDir, '**', '*pooled_coher*.mat'));
+
+trials2Remove = ~contains({filenames.folder}, 'DF Trials') ;
+filenames(trials2Remove) = [];
+
+contraction2Remove = ~contains({filenames.folder}, 'Torque Feedback') ;
+filenames(contraction2Remove) = [];
+
+trial = 1;
+avg = 0;
+avgCOF =0;
+avgCOF2 = 0;
+
+tatest = [];
+testL = [];
+
+taavg = 0;
+taavgCOF =0;
+taavgCOF2 = 0;
+
+mgavg = 0;
+mgavgCOF =0;
+mgavgCOF2 = 0;
+% 
+% solavg = 0;
+% solavgCOF =0;
+% solavgCOF2 = 0;
+% count = 0;
+% Tableaumap = Tableau;
+
+for i = 1:length(filenames)
+    try
+        
+        load(fullfile(filenames(i).folder,filenames(i).name), 'data')
+        TAF = data.TAF;
+        TAZ = data.TAZ;
+        TACOFz = data.TACOFz;
+        TACOF2z = data.TACOF2z;
+        %     Coherence_Analysis_CoCo_Test_code_v3(fullfile(filenames(i).folder,filenames(i).name),Muscle1,Muscle2,Coco,2048,1,500)
+        %     Coherence_Analysis_CoCo_Test_code_v3(filenames(i).name,Muscle1,Muscle2,Coco,2048,1,500)
+    catch
+        continue
+    end
+    nexttile(trial)
+    hold on
+    plot(TAF,TAZ)
+    hold off
+end
+xlim([0 40])
+ylim([0 1])
+    nexttile(trial)
+    hold on
+    plot(taF,taz)
+    hold off
+    taavg = taavg+taz;
+    taavgCOF = taavgCOF+taCOFz;
+    taavgCOF2 = taavgCOF2+taCOF2z;
+    tatest(i) = taCOF;
+    testL(i) = MULength;
+    
+    try
+    nexttile(trial+1)
+    hold on
+    plot(mgF,mgz)
+    hold off
+    mgavg = mgavg+mgz;
+    mgavgCOF = mgavgCOF+mgCOFz;
+    mgavgCOF2 = mgavgCOF2+mgCOF2z; 
+
+%     nexttile(trial)
+%     hold on
+%     plot(solF,solz)
+%     hold off
+%     solavg = solavg+mgz;
+%     solavgCOF = solavgCOF+solCOFz;
+%     solavgCOF2 = solavgCOF2+solCOF2z;
+
+    nexttile(trial+2)
+    hold on
+    plot(pF,pz)
+    hold off
+    avg = avg+pz;
+    avgCOF = avgCOF+rCOFz;
+    avgCOF2 = avgCOF2+rCOF2z;
+    catch
+    end 
+    %count = count +1;
+end
+ count = i;
+ avg=avg./count;
+ avgCOF = avgCOF./count;
+ avgCOF2 = avgCOF2./count;
+ 
+ taavg=taavg./count;
+ taavgCOF = taavgCOF./count;
+ taavgCOF2 = taavgCOF2./count;
+ mtestCOF = mean(tatest);
+ mtestL = mean(testL);
+ testCOFz = atanh(sqrt(mtestCOF))/sqrt(0.5/mtestL);
+ 
+ mgavg=mgavg./count;
+ mgavgCOF = mgavgCOF./count;
+ mgavgCOF2 = mgavgCOF2./count;
+ 
+%  solavg=solavg./count;
+%  solavgCOF = solavgCOF./count;
+%  solavgCOF2 = solavgCOF2./count;
+ 
+nt1 = nexttile(trial)
+title('TA-TA');
+hold on
+% plot(taF,taavg,'Color', 'r', 'LineWidth', 2)
+plot(taF,taavg,'SeriesIndex', tabcolor, 'LineWidth', 2)
+plot(taF,ones(1,length(taF))*taavgCOF,'r');
+plot(taF,ones(1,length(taF))*taavgCOF2,'k');
+hold off
+xlim([0 50])
+ylim([0 10])
+nt1.XAxis.FontSize  = 15;
+nt1.YAxis.FontSize  = 15;
+t.XLabel.String = 'Frequency (Hz)';
+t.YLabel.String = 'Coherence (z-transform)';
+
+try
+nt2 = nexttile(trial+1)
+title('MG-MG CoCo');
+hold on
+% plot(mgF,mgavg,'Color', 'r', 'LineWidth', 2)
+plot(mgF,mgavg,'SeriesIndex', tabcolor, 'LineWidth', 2)
+plot(mgF,ones(1,length(mgF))*mgavgCOF,'r');
+plot(mgF,ones(1,length(mgF))*mgavgCOF2,'k');
+hold off
+xlim([0 50])
+ylim([0 10])
+nt2.XAxis.FontSize  = 15;
+nt2.YAxis.FontSize  = 15;
+t.XLabel.String = 'Frequency (Hz)';
+t.YLabel.String = 'Coherence (z-transform)';
+
+% nt1 = nexttile(trial)
+% title('Sol-Sol CoCo');
+% hold on
+% plot(solF,solavg,'Color', 'k', 'LineWidth', 2)
+% plot(solF,ones(1,length(solF))*solavgCOF,'r');
+% plot(solF,ones(1,length(solF))*solavgCOF2,'k');
+% hold off
+% xlim([0 50])
+% ylim([0 10])
+% nt1.XAxis.FontSize  = 15;
+% nt1.YAxis.FontSize  = 15;
+% t.XLabel.String = 'Frequency (Hz)';
+% t.YLabel.String = 'Coherence (z-transform)';
+
+nt3 = nexttile(trial+2)
+title('TA-MG');
+hold on
+% plot(pF,avg,'Color', 'r', 'LineWidth', 2)
+plot(pF,avg,'SeriesIndex', tabcolor, 'LineWidth', 2)
+plot(pF,ones(1,length(pF))*avgCOF,'r');
+plot(pF,ones(1,length(pF))*max(avg(100:200)),'k');
+hold off
+xlim([0 50])
+ylim([0 10])
+nt3.XAxis.FontSize  = 15;
+nt3.YAxis.FontSize  = 15;
+ catch
+ end 
+
+
+
+% if trial == 1
+% title('No Coco')
+% elseif trial == 2
+%     title('With Coco')
+% % else
+% %     title('CoCo hold TA-MG Coherence')
+% end 
+
+%  print (gcf,'-dpdf', '-bestfit',['Group_DFfb_Torq_TA_Coherence.pdf']);
