@@ -3,7 +3,7 @@ close all
 clc
 %% Batch PreProcessing for the SNM lab
 
-% Choose the outermost directory with all study subject data
+% Must be in outermost directory containing all study subject data
 SubjectID = 'Flow04';
 SubjectDir = cd;
 rootDir = fullfile(SubjectDir, SubjectID);
