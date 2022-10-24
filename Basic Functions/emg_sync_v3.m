@@ -1,4 +1,4 @@
-function [true_fsamp, Time_diff] = emg_sync_with_upsampler(emg_fast,emg_slow,Fs_fast,Fs_slow,chart)
+function [true_fsamp, Time_diff, autocorrelation_matrix] = emg_sync_with_upsampler(emg_fast,emg_slow,Fs_fast,Fs_slow,chart)
 
 %% description
 %%%% inputs %%%%
@@ -56,25 +56,25 @@ end
 true_fsamp = new_Fs(I);
 % plot(new_Fs,autocorrelation_matrix);
 
-%search 2
-autocorrelation_matrix = [];
-
-% sets search range for cross-correlation
-
-new_Fs = true_fsamp - 0.5 : 0.001 : true_fsamp + 0.5;
-% cross-correlation operation
-for j = new_Fs
-    a2 = resampler(emg_fast, Fs_fast, j, 0);
-    [acor,lag] = xcorr(emg_slow, a2); %
-    autocorrelation_matrix = [autocorrelation_matrix max(abs(acor))];
-end
-[~,I] = max(autocorrelation_matrix);
-true_fsamp = new_Fs(I);
+% %search 2
+% autocorrelation_matrix = [];
+% 
+% % sets search range for cross-correlation
+% 
+% new_Fs = true_fsamp - 0.5 : 0.001 : true_fsamp + 0.5;
+% % cross-correlation operation
+% for j = new_Fs
+%     a2 = resampler(emg_fast, Fs_fast, j, 0);
+%     [acor,lag] = xcorr(emg_slow, a2); %
+%     autocorrelation_matrix = [autocorrelation_matrix max(abs(acor))];
+% end
+% [~,I] = max(autocorrelation_matrix);
+% true_fsamp = new_Fs(I);
 
 % upsamples slow emg from its true sampling rate (true_fsamp) to the fast
 % emg sampling rate and finds the lag between the signals
 
-slow_emg_upsampled = upsampler(emg_slow, true_fsamp, Fs_fast);
+slow_emg_upsampled = resampler(emg_slow, true_fsamp, Fs_fast,0);
 [acor, lag] = xcorr(emg_fast, slow_emg_upsampled); %
 [~,I] = max(abs(acor));
 Time_diff = lag(I) / Fs_fast;
@@ -87,6 +87,6 @@ if chart == 1
     clf
     plot(t_fast,emg_fast, 'k');hold on;
     t_slow = (1 : length(slow_emg_upsampled)) / Fs_fast + Time_diff;
-    plot(t_slow, slow_emg_upsampled, 'SeriesIndex', 6); hold off;
+    plot(t_slow, slow_emg_upsampled, 'SeriesIndex', 3); hold off;
     legend('fast', 'slow')
 end

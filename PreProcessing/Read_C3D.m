@@ -60,7 +60,7 @@ EMGData = AnalogData(:,EMGChan);
 
 %% Calculating COP Data and separating Force Plate data for Data section of C3D reader structure
 [FPData, COPChans] = bertec_COP(AnalogData, 5, 2048);
-
+%  FPData = AnalogData(:,1:12);
 for k = 1:size(FPData,2)
     ForcePlates.(erase(char(AnalogLabels{k}),{' ', 'r', 'Plate'})) = FPData(:,k);
 end

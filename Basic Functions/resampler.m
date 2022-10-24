@@ -27,4 +27,5 @@ if chart==1
     hold on;
     plot(time_resampled,resampled_data(:,1));
     legend('original','resampled')
+    hold off
 end

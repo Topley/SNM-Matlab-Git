@@ -3,7 +3,7 @@ function [] = startup()
 %scripts
 
 %   add tableau graphics to filepath
-addpath(genpath('C:\SNM Matlab SDK'));
+addpath(genpath('C:\SNM Git Project'));
 
 % Add folders containing matlab code
 % addpath(genpath(uigetdir('C:\Users\tuc43377\Desktop\CoCo project\Matlab Code')));
@@ -21,8 +21,8 @@ pos = [1775 485 560 420];
 set(0, 'DefaultFigurePosition', pos);
 
 % folder to begin in at startup
-%cd(uigetdir('C:\Users\tuc43377\Desktop\CoCo project'))
-cd('G:\TRD Hub');
+cd(uigetdir('C:\Users\tuc43377\Desktop'))
+%cd('G:\TRD Hub');
 
 
 end

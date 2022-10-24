@@ -3,8 +3,8 @@ close all
 clc
 %% Batch PreProcessing for the SNM lab
 
-% Choose the outermost directory with all study subject data
-SubjectID = 'Flow04';
+% Must be in outermost directory containing all study subject data
+SubjectID = 'Flow05';
 SubjectDir = cd;
 rootDir = fullfile(SubjectDir, SubjectID);
 
@@ -14,7 +14,9 @@ if isempty(filenames)
     % If the new software was used, find the correct fiels
     filenames = dir(fullfile(rootDir,'*.otb+'));
 end
-
+ joint2Remove = ~contains(filenames, 'Coco03') ;
+ filenames(joint2Remove) = [];
+ 
 % Look for OTB files in subjects folder
 c3dFiles = dir(fullfile(rootDir, '*.c3d'));
 if isempty(c3dFiles)
@@ -32,13 +34,13 @@ c3dFiles(removeStatic,:) = [];
 %%%% automatically
 
 Stickers = 4;   % number of arrays
-AuxChans = 1;   % 13 for biodex setup, 0 for treadmill
-MuscleList = {'TA', 'MG', '', 'Sol'}; % muscles tested
-Operator = 5; % who is preprocessing this data
+AuxChans = 1;   % 13 for biodex setup, 1 for treadmill
+MuscleList = {'TA', 'MG', '', 'Sol'}; % muscles tested, empty if multiple in skipped
+Operator = 6; % who is preprocessing this data
 TotalChans = Stickers * 64 + AuxChans;
 
 % loop through files for preprocessing
-    for i = 1:length(filenames)
+    for i = 2:length(filenames)
             FileNamePathOTB = fullfile(filenames(i).folder,filenames(i).name);
             
             % making sure preprocessing runs if c3ds are missing

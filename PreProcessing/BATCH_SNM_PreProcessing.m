@@ -4,7 +4,7 @@ clc
 %% Batch PreProcessing for the SNM lab
 
 % Must be in outermost directory containing all study subject data
-SubjectID = 'Flow04';
+SubjectID = 'Flow06';
 SubjectDir = cd;
 rootDir = fullfile(SubjectDir, SubjectID);
 
@@ -14,6 +14,10 @@ if isempty(filenames)
     % If the new software was used, find the correct fiels
     filenames = dir(fullfile(rootDir,'*.otb+'));
 end
+[~,fIdx] = sort({filenames(:).date});
+filenames = filenames(fIdx);
+filenames = filenames(3:end);
+filenames(7) = [];
 
 % Look for OTB files in subjects folder
 c3dFiles = dir(fullfile(rootDir, '*.c3d'));
@@ -21,6 +25,8 @@ if isempty(c3dFiles)
     % If no c3d files exist in subjects folder then ignore kk file creation
     c3dFiles = '';
 end
+[~,cIdx] = sort({c3dFiles(:).date});
+c3dFiles = c3dFiles(cIdx);
 
 % removes the static trial used to build realtime feedback model of
 % kinematics 
@@ -31,10 +37,10 @@ c3dFiles(removeStatic,:) = [];
 %%%% These must be properly filled out for the processing to work
 %%%% automatically
 
-Stickers = 4;   % number of arrays
+Stickers = 3;   % number of arrays
 AuxChans = 1;   % 13 for biodex setup, 1 for treadmill
-MuscleList = {'TA', 'MG', '', 'Sol'}; % muscles tested, empty if multiple in skipped
-Operator = 5; % who is preprocessing this data
+MuscleList = {'TA', 'MG', 'Sol'}; % muscles tested, empty if multiple in skipped
+Operator = 6; % who is preprocessing this data
 TotalChans = Stickers * 64 + AuxChans;
 
 % loop through files for preprocessing

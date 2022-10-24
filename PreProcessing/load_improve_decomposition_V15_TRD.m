@@ -5,14 +5,27 @@ clc;
 [FileName,PathName] = uigetfile({'*.mat'},'Select the MATLAB Decomposed file');
 load(fullfile(PathName,FileName));
 ind = strfind(FileName,'_');
+
 clusterPath = replace(PathName, 'decomposed', 'to_cluster');
+kkPath = replace(PathName, 'decomposed', 'kk files');
+
+kkFile = [FileName(1:ind(2)), 'kk',FileName(ind(3):ind(4)-1) '.mat'];
 
 vars = matfile(fullfile(clusterPath,FileName(1:ind(end)-1)));
-EMG = vars.EMG;
-EMGall = vars.EMGall;
+varCOP = load(fullfile(kkPath,kkFile));
 
-[~,EMGFeedback] = EMGpro(vars.EMGall, 'channel', 27, 'filter', {'filtRMS', 500, 250});
-EMGFeedback = EMGFeedback./10;
+cop = varCOP.COP.WeightedY;
+unpadded = cop ~= 0;
+padded = cop == 0;
+offset = min(cop(unpadded));
+cop(padded) = offset;
+
+EMGall = vars.EMGall;
+EMG = vars.EMG;
+
+cop = ((cop - mean(cop(1:100)))./(abs((max(cop)-min(cop)))))*10;
+% [~,EMGFeedback] = EMGpro(vars.EMGall, 'channel', 27, 'filter', {'filtRMS', 500, 250});
+% EMGFeedback = EMGFeedback./10;
 
 
 pchan(1,:)=[nan 1 2 3 4];
@@ -51,7 +64,7 @@ end
 save([FileName(1:end-4),'_MUCLEANED.mat'],'-v7.3');
 
 %%%NORMAL%%%
-improve_decomposition_V15([PathName,FileName(1:end-4),'_MUCLEANED.mat'],'MUPulses','IPTs','SIL','EMG','SIG','FACTOR','PEREIG','fsamp','FREQ', 'EMGFeedback',[0 length(EMGall)/2048],'LSD');
+improve_decomposition_V15([PathName,FileName(1:end-4),'_MUCLEANED.mat'],'MUPulses','IPTs','SIL','EMG','SIG','FACTOR','PEREIG','fsamp','FREQ', 'cop',[0 length(EMGall)/2048],'LSD');
 
 %load([FileName(1:end-4),'_MUCLEANED.mat']);
 
@@ -61,5 +74,4 @@ improve_decomposition_V15([PathName,FileName(1:end-4),'_MUCLEANED.mat'],'MUPulse
 
 clear trial PathName ans ROW COL ind FIRSTTIME vars
 save([FileName(1:end-4),'_MUCLEANED.mat'],'-v7.3','-nocompression');
-
 

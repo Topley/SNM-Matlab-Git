@@ -5,23 +5,23 @@ function [subDirectory, trialname, mucleanFile, decompFile, clusterFile, kkFile,
 [subDirectory,inputFile] = fileparts(FullFileName);
 [subDirectory,~] = fileparts(subDirectory);
 under = strfind(inputFile, '_');
-trialname = inputFile(1:under(3)-1);
+trialname = inputFile(1:under(2)-1);
 
 if contains(inputFile, '.mat')
     inputFile = erase(inputFile,'.mat');
 end
 
-if  ~contains(inputFile, '_v23decomposed') && length(under) < 3
+if  ~contains(inputFile, '_v23decomposed') && length(under) < 2
     clusterFile = fullfile(subDirectory, 'to_cluster', [inputFile, '_5.mat']);
     mucleanFile = fullfile(subDirectory, 'decomposed', [inputFile, '_5_v23decomposed_MUCLEANED.mat']);
     decompFile = fullfile(subDirectory, 'decomposed', [inputFile,'_5_v23decomposed.mat']);
     kkFile = fullfile(subDirectory, 'kk files', [inputFile(1:under(3)),'kk.mat']);
     
-elseif  ~contains(inputFile, '_v23decomposed') && length(under) > 3
-    clusterFile = fullfile(subDirectory, 'to_cluster', [inputFile(1:under(4)-1), '.mat']);
+elseif  ~contains(inputFile, '_v23decomposed') && length(under) > 2
+    clusterFile = fullfile(subDirectory, 'to_cluster', [inputFile, '.mat']);
     mucleanFile = fullfile(subDirectory, 'decomposed', [inputFile, '_v23decomposed_MUCLEANED.mat']);
     decompFile =  fullfile(subDirectory, 'decomposed', [inputFile,'_v23decomposed.mat']);
-    kkFile = fullfile(subDirectory, 'kk files', [inputFile(1:under(3)),'kk.mat']);
+    kkFile = fullfile(subDirectory, 'kk files', [inputFile(1:under(2)),'kk_5.mat']);
     
 elseif ~contains(inputFile, 'MUCLEANED')
     clusterFile = fullfile(subDirectory, 'to_cluster', [inputFile(1:under(4)-1),'.mat']);

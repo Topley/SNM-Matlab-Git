@@ -1,5 +1,5 @@
 
-function [allbadchan, data] = Preprocess_OTB_EMG(TrialPath, Muscle, ArrayChannels, TotalChans, fsamp) 
+function [allbadchan, data] = Preprocess_OTB_EMG(arrayMatrix, Muscle, ArrayChannels, TotalChans, fsamp) 
 
 %% DESCRIPTION
 
@@ -19,22 +19,22 @@ function [allbadchan, data] = Preprocess_OTB_EMG(TrialPath, Muscle, ArrayChannel
 x_coordstart = 1;
 allbadchan = [];
 
-    %%%% opening the sig file is different with OTB+ files. The script is updated to open old and new OTB files %%%%
-[~, Trialname] = fileparts(TrialPath);
-
-sigFile = fullfile(TrialPath, [Trialname,'.sig']);
-
-if ~exist(sigFile)
-    % this will only work with the new OTB+ files
-sigFile = dir(fullfile(TrialPath,'*.sig'));
-sigFile = fullfile(sigFile.folder, sigFile.name);
-end 
-
-f = fopen(sigFile);
-
-%%% extract data from Quattro 
-data = fread(f,[TotalChans+8,inf],'short');
-data = double(data(:,x_coordstart:end));
+%     %%%% opening the sig file is different with OTB+ files. The script is updated to open old and new OTB files %%%%
+% [~, Trialname] = fileparts(TrialPath);
+% 
+% sigFile = fullfile(TrialPath, [Trialname,'.sig']);
+% 
+% if ~exist(sigFile)
+%     % this will only work with the new OTB+ files
+% sigFile = dir(fullfile(TrialPath,'*.sig'));
+% sigFile = fullfile(sigFile.folder, sigFile.name);
+% end 
+% 
+% f = fopen(sigFile);
+% 
+% %%% extract data from Quattro 
+% data = fread(f,[TotalChans+8,inf],'short');
+data = double(arrayMatrix(:,x_coordstart:end));
 
 %% plotting EMG for removal of bad channels
 emgFig = figure(101);
@@ -57,6 +57,8 @@ for k = 1:length(ArrayChannels)
                 title([Muscle, ' - ', num2str(current16{m}(i-15)), ' : ', num2str(current16{m}(i))]);
                 yticks([-15000:1000:1000]);
                 yticklabels([flip(channelNumber), ""]);
+                emgYAxis = get(gca,'ylim');
+                ylim([emgYAxis(1) 1000])
                 ylabel('Channel Number');
                 
                 %% Remove bad channels
@@ -75,7 +77,7 @@ for k = 1:length(ArrayChannels)
                 else
                     allbadchan = [allbadchan; badchan'];
                 end
-                clf % Clear Figure
+                clf(emgFig); % Clear Figure
         end
         
     else
@@ -106,4 +108,5 @@ end
 
 allbadchan = sort(allbadchan);
 
-fclose all;
+%fclose all;
+end

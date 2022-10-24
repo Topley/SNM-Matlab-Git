@@ -81,6 +81,16 @@ elseif ~exist(kkFolder,'dir') && ~isempty(FileNamePathC3D)
 else
 end
 
+%% Extract data from OTB sig file
+%%%% opening the sig file is different with OTB+ files. The script is updated to open old and new OTB files %%%%
+
+sigFile = dir(fullfile(trialFolder,'*.sig'));
+sigFile = fullfile(sigFile.folder, sigFile.name);
+f = fopen(sigFile);
+
+%%% extract data from Quattro
+ChannelMatrix = fread(f,[TotalChans+8,inf],'short');
+fclose all;
 %% Loop through and PreProcess EMG channels
 for ij = 1:ArrayNumber
     
@@ -109,7 +119,7 @@ for ij = 1:ArrayNumber
         save_KKFile = replace(saveid, Muscle, 'kk'); % save kk file
         
         % preprocess OTB data
-        [allbadchan, data] = Preprocess_OTB_EMG(trialFolder, Muscle, ArrayChannels, TotalChans, fsamp);
+        [allbadchan, data] = Preprocess_OTB_EMG(ChannelMatrix, Muscle, ArrayChannels, TotalChans, fsamp);
         
         %% format EMG data for saving
         if allbadchan == 'n'
@@ -178,19 +188,25 @@ for ij = 1:ArrayNumber
                     disp('Cannot read trial c3d file')
                 end
                 
-                FrameRate = c3dStruct.Headers.VideoFrameRate; % camera frame rate
+                fsampM = c3dStruct.Headers.VideoFrameRate; % camera frame rate
                 AVRatio = c3dStruct.Headers.AVRatio; % camera to analogs ratio
                 TotalFrames = c3dStruct.Headers.LastFrame; % total camera frames
-                fsampPlates = AVRatio * FrameRate; % forceplate sampling rate
-                c3dTime = [0:length(c3d_Data.EMG)-1]./fsampPlates;
+                fsampK = AVRatio * fsampM; % forceplate sampling rate
+                c3dTime = [0:length(c3d_Data.EMG)-1]./fsampK;
                 otbTime = [0:length(otbEMG)-1]./fsamp;
+                c3dEMG = c3d_Data.EMG;
                 
                 try
                     try
                         % synchronize forceplates and plot synchronized EMG
                         % signals
                         tic
-                        [fsampK, timeDiff] = emg_sync_v3(otbEMG, c3d_Data.EMG, fsamp, fsampPlates, 1);
+                        [~, timeDiff, autoMatrix] = emg_sync_v3(otbEMG, c3d_Data.EMG, fsamp, fsampK, 1);
+%                         aFig = figure(99);
+%                         Autoax = axes('Parent',aFig);
+%                         clf(Autoax)
+%                         plot(Autoax, autoMatrix)
+                        
                         TimeDelay = timeDiff;
                         zeroPadFront = zeros(timeDiff*2048,1);
                         
@@ -198,6 +214,7 @@ for ij = 1:ArrayNumber
                         upsampPlates = resampler(cell2mat(struct2cell(c3d_Data.ForcePlates)'), fsampK, fsamp, 0);
                         TimeStop = (length(zeroPadFront) + size(upsampPlates,1)) / fsamp;
                         
+%                         [FPData, COPData] = bertec_COP(upsampPlates, 5, 2048);
                         % setup forceplate structure for easier data manipulation
                         fpLabels = fieldnames(c3d_Data.ForcePlates);
                         for ii = 1:size(fpLabels,1)
@@ -205,12 +222,11 @@ for ij = 1:ArrayNumber
                             paddedFPVar(length(paddedFPVar):trialLength)=0; % zero pads end of signal
                             ForcePlates.(fpLabels{ii}) = paddedFPVar;
                         end
-                        toc
                         
-                        tic
                         % upsample COP to fsamp
                         upsampCOP = resampler(cell2mat(struct2cell(c3d_Data.COP)'), fsampK, fsamp, 0);
                         
+%                         copLabels = {'LeftX', 'LeftY','RightX','RightY','WeightedX','WeightedY'};
                         %setup COP structure for easier data manipulation
                         copLabels = fieldnames(c3d_Data.COP);
                         for jj = 1:size(copLabels,1)
@@ -224,34 +240,27 @@ for ij = 1:ArrayNumber
                     end
                     
                     try
-
-                        % upsample C3D EMG fsamp
-                        zeroPadFrontEMG = zeros(timeDiff * 2048, 1);
-                        upsampC3dEMG = resampler(c3d_Data.EMG, fsampK, fsamp, 0);
-                        
-                        %Replace C3D EMG with upsampled signal
-                        paddedEMG = [zeroPadFrontEMG; upsampC3dEMG]; % zero pads front of signal
-                        paddedEMG(length(paddedEMG):trialLength)=0; % zero pads end of signal
-                        c3dEMG = paddedEMG;
-                    catch
-                        disp('no EMG channel in this trials c3d file')
-                    end
-                    
-                    try
                         tic
                         % synchronize Marker data
-                        [fsampMars, timeDiffMarker] = emg_sync_v3(otbEMG, c3d_Data.EMG, fsamp, FrameRate, 0);
-                        
+                        %[fsampMars, ~, ~] = emg_sync_v3(otbEMG, c3dEMG, fsamp, FrameRate, 1);
                         % upsample marker trajectories to fsamp
-                        zeroPadFrontMars = zeros(timeDiffMarker * 2048, 1);
-                        upsampMarkers = resampler(cell2mat(struct2cell(c3d_Data.Markers)'), fsampMars, fsamp, 0);
+                        upsampMarkers = resampler(cell2mat(struct2cell(c3d_Data.Markers)'), fsampM, fsamp, 0);
+                        
+                        zeroFront = zeros(timeDiff * 2048, 1);
+                        markerLabels = fieldnames(c3d_Data.Markers);
+                        markerNumber = size(markerLabels,1);
+                        zeroFrontMarkers = repmat(zeroFront,1, markerNumber*3);
+                        FrontPadMarkers = [zeroFrontMarkers;upsampMarkers];
+                        
+                        padBackMarkers = zeros(length(size(FrontPadMarkers,1)+1:trialLength), 3);
                         
                         %setup Marker structure for easier data manipulation
-                        markerLabels = fieldnames(c3d_Data.Markers);
-                        for kk = 1:size(markerLabels,1)
-                            paddedMar = [zeroPadFront; upsampMarkers(:,kk)]; % zero pads front of signal
-                            paddedMar(length(paddedMar):trialLength)=0; % zero pads end of signal
-                            Markers.(markerLabels{kk}) = paddedMar;
+                        loop = 0;
+                        for kk = 1:3:(markerNumber*3)
+                            loop = loop+1;
+                            frontMarker = FrontPadMarkers(:, kk:kk+2);
+                            fullMarkers = [frontMarker;padBackMarkers];
+                            Markers.(markerLabels{loop}) = fullMarkers;%upsampMarkers(m1:m2, :); % zero pads front of signal
                         end
                         toc
                     catch
@@ -263,7 +272,7 @@ for ij = 1:ArrayNumber
                 end
                 
                 try
-                    save(fullfile(kkFolder, save_KKFile), 'c3d_Data', 'Markers', 'fsampMars', 'COP', 'ForcePlates', 'fsampK', 'c3dEMG', 'FrameRate', 'AVRatio', 'TotalFrames', 'TimeDelay', 'TimeStop', '-v7.3','-nocompression');
+                    save(fullfile(kkFolder, save_KKFile), 'c3d_Data', 'Markers', 'fsampM', 'COP', 'ForcePlates', 'fsampK', 'c3dEMG', 'autoMatrix', 'AVRatio', 'TotalFrames', 'TimeDelay', 'TimeStop', '-v7.3','-nocompression');
                 catch
                     save(fullfile(kkFolder, save_KKFile), 'c3d_Data', 'COP', 'ForcePlates','fsampK', 'c3dEMG','AVRatio', 'TotalFrames', 'TimeDelay', 'TimeStop', '-v7.3','-nocompression');
                 end
