@@ -10,7 +10,7 @@ clusterPath = replace(PathName, 'decomposed', 'to_cluster');
 kkPath = replace(PathName, 'decomposed', 'kk files');
 
 kkFile = [FileName(1:ind(2)), 'kk',FileName(ind(3):ind(4)-1) '.mat'];
-
+kkFile = replace(kkFile, 'kk_5', 'kk_6');
 vars = matfile(fullfile(clusterPath,FileName(1:ind(end)-1)));
 varCOP = load(fullfile(kkPath,kkFile));
 

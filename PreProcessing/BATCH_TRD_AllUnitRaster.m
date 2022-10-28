@@ -1,117 +1,158 @@
 clear all
 close all
-rootDir = cd;
-filenames = dir(fullfile(rootDir, 'kk files', '*.mat'));
-% filenames = dir('*Sol_5_v23decomposed_MUCLEANED.mat')
-tic
-for i = 6:size(filenames,1)
-    
-    try
-        disp(['Processing ', filenames(i).name])
-        plot_AllMUFiring(fullfile(filenames(i).folder,filenames(i).name))
-    catch
-        disp(['   Cant process: ', filenames(i).name])
-    end
-    
-end
-toc
+clc
+%% All Muscle Summary Raster Plots
 
-function plot_AllMUFiring(kkFile)
+% Must be in outermost directory containing all study subject data
+SubjectID = 'TRDTest04';
+c = colormap;
+SubjectDir = cd;
+rootDir = fullfile(SubjectDir, SubjectID);
+kkFiles = dir(fullfile(rootDir,'kk files', '*.mat'));
+
+for i=1:length(kkFiles)
 % plotMUFiring    loads motor units from all decomposed files and variables
 % from toCluster files; plots raster of units, IDRs, average EMG, and some Treadmill Forces
 
-[fileDirectory, trialID, mucleanFile, decompFile, clusterFile, kkFile, ~] = Set_Directories(kkFile, 'TRD');
-[~,filename] = fileparts(clusterFile);
-fileDir  = [fileDirectory,'\decomposed'];
-c = colormap;
-
-under = find(toClusterTA == '_');
-
-toClusterTA = replace(clusterFile,'kk','TA');
-toClusterSol = replace(clusterFile,'kk','Sol');
-toClusterMG = replace(clusterFile,'kk','MG');
-
-if ~exist(replace(mucleanFile,'kk','TA'));
-decompTA = replace(decompFile,'kk','TA');
-else 
-    decompTA = replace(mucleanFile,'kk','TA');
-end 
-
-if ~exist(replace(mucleanFile,'kk','Sol'));
-decompSol = replace(decompFile,'kk','Sol');
-else 
-    decompSol = replace(mucleanFile,'kk','Sol');
-end 
-
-if ~exist(replace(mucleanFile,'kk','MG'));
-decompMG = replace(decompFile,'kk','MG');
-else 
-    decompMG = replace(mucleanFile,'kk','MG');
-end 
-
-varsTA =  matfile(toClusterTA);
-[~,TA_EMG] = EMGpro(varsTA.EMGall, 'channel', 27, 'filter', {'rawRMS', 500});
-fsamp = varsTA.fsamp;
-timeEMG = [0:length(TA_EMG)-1]./fsamp;
-
-varsSol =  matfile(toClusterSol);
-[~,Sol_EMG] = EMGpro(varsSol.EMGall, 'channel', 27, 'filter', {'rawRMS', 500});
-
-varsMG =  matfile(toClusterMG);
-[~,MG_EMG] = EMGpro(varsMG.EMGall, 'channel', 27, 'filter', {'rawRMS', 500});
-
-varsKK =  matfile(kkFile);
-% varsKK = varsKK.c3d_Data;
-COP = varsKK.COP;
-copAP = COP.WeightedY;
-unpadded = copAP ~= 0;
-padded = copAP == 0;
-offset = min(copAP(unpadded));
-copAP(padded) = offset;
-copTime = [0:length(copAP)-1]./fsamp;
-
-try
-    TAPulses = matfile(decompTA);
-    TAFiring = SortUnits(TAPulses.MUPulses);
-end
-
-try
-    SolPulses = matfile(decompSol);
-    SolFiring = SortUnits(SolPulses.MUPulses);
-end
-
-try
-    MGPulses = matfile(decompMG);
-    MGFiring = SortUnits(MGPulses.MUPulses);
-end
+kkFile = fullfile(kkFiles(i).folder, kkFiles(i).name);
+    [~, clusterFile, decompFile, cleanFile] = Get_TrialFiles(kkFile);
+    
+    [~, TrialID] = fileparts(kkFile);
+    TrialID = TrialID(1:end-5);
+    [fileDir, ~]  = fileparts(decompFile);
+    fsamp = 2048;
+    kkVars = matfile(kkFile);
+    copS = kkVars.COP;
+    cpML = copS.WeightedX;
+    cpAP = copS.WeightedY;
+    fpS = kkVars.ForcePlates;
+    RightFz = fpS.RightFz;
+    TimeDelay = kkVars.TimeDelay;
+    TimeStop = kkVars.TimeStop;
+    
+    unpadAP = RightFz ~= 0;
+    paddAP = RightFz == 0;
+    offsetR = min(RightFz(unpadAP));
+    RightFz(paddAP) = offsetR;
+    rFz = RightFz;
+    RightFz = fpS.RightFz;
+    
+    unpadAP = cpAP ~= 0;
+    paddAP = cpAP == 0;
+    offset = min(cpAP(unpadAP));
+    cpAP(paddAP) = offset;
+    copAP = cpAP;
+    unpadML = cpML ~= 0;
+    paddML = cpML == 0;
+    offset2 = min(cpML(unpadML));
+    cpML(paddML) = offset2;
+    copML = cpML;
+    
+    clusterTA = replace(clusterFile, 'kk', 'TA');
+    varsTA = matfile(clusterTA);
+    clusterSol = replace(clusterFile, 'kk', 'Sol');
+    varsSol = matfile(clusterSol);
+    clusterMG = replace(clusterFile, 'kk', 'MG');
+    varsMG = matfile(clusterMG);
+    
+    decomposedTA = replace(decompFile, 'kk', 'TA');
+    decomposedSol = replace(decompFile, 'kk', 'Sol');
+    decomposedMG = replace(decompFile, 'kk', 'MG');
+    cleanTA = replace(cleanFile, 'kk', 'TA');
+    cleanSol = replace(cleanFile, 'kk', 'Sol');
+    cleanMG = replace(cleanFile, 'kk', 'MG');
+    
+    try
+        unitsTA = matfile(cleanTA);
+        TAPulses = unitsTA.MUPulses;
+        TAFiring = SortUnits(TAPulses);
+    catch
+        unitsTA = matfile(decomposedTA);
+        TAPulses = unitsTA.MUPulses;
+        TAFiring = SortUnits(TAPulses);
+    end 
+    
+    try
+        unitsSol = matfile(cleanSol);
+        SolPulses = unitsSol.MUPulses;
+        SolFiring = SortUnits(SolPulses);
+    catch
+        unitsSol = matfile(decomposedSol);
+        SolPulses = unitsSol.MUPulses;
+        SolFiring = SortUnits(SolPulses);
+    end 
+    
+    try
+        unitsMG = matfile(cleanMG);
+        MGPulses = unitsMG.MUPulses;
+        MGFiring = SortUnits(MGPulses);
+    catch
+        unitsMG = matfile(decomposedMG);
+        MGPulses = unitsMG.MUPulses;
+        MGFiring = SortUnits(MGPulses);
+    end 
+    
+    Sol_EMG = varsSol.EMG;
+    MG_EMG = varsMG.EMG;
+    TA_EMG = varsTA.EMG;
+    
+     % debias all EMG channels
+    Sol_EMG = Sol_EMG - mean(Sol_EMG, 2);
+    MG_EMG = MG_EMG - mean(MG_EMG, 2);
+    TA_EMG = TA_EMG - mean(TA_EMG, 2);
+    
+    % mean of all EMG channels after rectification
+    SOL_rectified=abs(Sol_EMG);
+    Sol_EMG=mean(SOL_rectified,1);
+    
+    MG_rectified=abs(MG_EMG);
+    MG_EMG=mean(MG_rectified,1);
+    
+    TA_rectified=abs(TA_EMG);
+    TA_EMG=mean(TA_rectified,1);
+    
+    timeEMG = [0:length(TA_EMG)-1]./fsamp;
+copTime = timeEMG;
 
 h=figure('visible', 'off');
-t = tiledlayout(17, 1, 'TileSpacing', 'tight');
-t1 = nexttile([2,1]); t1.YAxis.TickLabels = []; t1.XAxis.Color = 'none'; t1.YAxis.Color = 'none';
+t = tiledlayout(18, 1, 'TileSpacing', 'tight');
+t1 = nexttile([3,1]); t1.YAxis.TickLabels = []; t1.XAxis.Color = 'none'; t1.YAxis.Color = 'none';
 t2 = nexttile([5,1]); t2.YAxis.TickLabels = []; t2.XAxis.Color = 'none'; t2.YAxis.Color = 'none';
 t3 = nexttile([5,1]); t3.YAxis.TickLabels = []; t3.XAxis.Color = 'none'; t3.YAxis.Color = 'none';
 t4 = nexttile([5,1]); t4.YAxis.TickLabels = []; t4.YAxis.Color = 'none';
 
-ax1 = axes(t); ax1.Layout.Tile = 1; ax1.Layout.TileSpan = [2 1];
+ax1 = axes(t); ax1.Layout.Tile = 1; ax1.Layout.TileSpan = [3 1];
+z = zeros(size(copAP))';
+surface([timeEMG;timeEMG],[copAP';copAP'],[z;z],[timeEMG;timeEMG],...
+    'facecolor','none','edgecolor','interp','linewidth',1);
+colormap(ax1,parula);
 %ax2 = axes(t); ax2.Layout.Tile = 2;
-plot(ax1,copTime, copAP, 'k')
+% plot(ax1,copTime, copAP, 'k')
 %plot(ax2,copTime, copML./100, 'Color', [.5 .5 .5])
 
-ax4 = axes(t); ax4.Layout.Tile = 4; ax4.Layout.TileSpan = [4 1];
-ax3 = axes(t); ax3.Layout.Tile = 3; ax3.Layout.TileSpan = [5 1];
-ax6 = axes(t); ax6.Layout.Tile = 9; ax6.Layout.TileSpan = [4 1];
-ax5 = axes(t); ax5.Layout.Tile = 8; ax5.Layout.TileSpan = [5 1];
-ax8 = axes(t); ax8.Layout.Tile = 14; ax8.Layout.TileSpan = [4 1];
-ax7 = axes(t); ax7.Layout.Tile = 13; ax7.Layout.TileSpan = [5 1];
+ax3 = axes(t); ax3.Layout.Tile = 4; ax3.Layout.TileSpan = [4 1];
+ax4 = axes(t); ax4.Layout.Tile = 7; ax4.Layout.TileSpan = [2 1];
+ax5 = axes(t); ax5.Layout.Tile = 9; ax5.Layout.TileSpan = [4 1];
+ax6 = axes(t); ax6.Layout.Tile = 12; ax6.Layout.TileSpan = [2 1];
+ax7 = axes(t); ax7.Layout.Tile = 14; ax7.Layout.TileSpan = [4 1];
+ax8 = axes(t); ax8.Layout.Tile = 17; ax8.Layout.TileSpan = [2 1];
 
-plot(ax4,timeEMG, TA_EMG, 'k')%'SeriesIndex', 8)
+
+l1 = plot(ax4,timeEMG, TA_EMG, 'SeriesIndex', 7)
+emgC1 = get(l1, 'Color');
+l1.Color = [emgC1(1) emgC1(2) emgC1(3) .5];
 ylim(ax4, [0 max(TA_EMG)]);
 
-plot(ax6,timeEMG, MG_EMG, 'k')%'SeriesIndex',10)
+l2 = plot(ax6,timeEMG, MG_EMG, 'SeriesIndex', 9)
+emgC2 = get(l2, 'Color');
+l2.Color = [emgC2(1) emgC2(2) emgC2(3) .5];
 ylim(ax6, [0 max(MG_EMG)]);
 
-plot(ax8,timeEMG, Sol_EMG, 'k')% 'SeriesIndex',1)
+l3 = plot(ax8,timeEMG, Sol_EMG, 'SeriesIndex',1)
+emgC3 = get(l3, 'Color');
+l3.Color = [emgC3(1) emgC3(2) emgC3(3) .5];
 ylim(ax8, [0 max(Sol_EMG)]);
+
 try
     for i = 1:size(TAFiring,2)
         tsp = TAFiring{i}/fsamp;
@@ -119,10 +160,10 @@ try
         tsp(tsp < 0) = [];
         for j = 1:spikes
             hold on
-            line(ax3,[tsp(j) tsp(j)], [-i -i-1], 'Color', c(7,:))
+            line(ax3,[tsp(j) tsp(j)], [-i -i-1], 'Color', c(8,:))
         end
     end
-    ylim(ax3, [-i-1 0]);
+    ylim(ax3, [-i-2 -1]);
 end
 
 try
@@ -132,10 +173,10 @@ try
         spikes = numel(tsp);
         for j = 1:spikes
             hold on
-            line(ax7,[tsp(j) tsp(j)], [-i -i-1], 'Color',  c(1,:))
+            line(ax7,[tsp(j) tsp(j)], [-i -i-1], 'Color',  c(2,:))
         end
     end
-    ylim(ax7, [-i-1 0]);
+    ylim(ax7, [-i-2 -1]);
 end
 
 try
@@ -144,29 +185,28 @@ try
         tsp(tsp < 0) = [];
         spikes = numel(tsp);
         for j = 1:spikes
-            line(ax5,[tsp(j) tsp(j)], [-i -i-1], 'Color', c(9,:))
+            line(ax5,[tsp(j) tsp(j)], [-i -i-1], 'Color', c(10,:))
         end
     end
-    ylim(ax5, [-i-1 0]);
+    ylim(ax5, [-i-2 -1]);
 end
 xlabel(t,'Time');
 
 figAxes = findall(gcf,'type','axes');
 for i = 1:length(figAxes)
-    xlim(figAxes(i), [0 length(TA_EMG)./fsamp])
+    xlim(figAxes(i), [TimeDelay TimeStop])
     set(figAxes(i), 'Color', 'none');
     set(figAxes(i).XAxis, 'Color', 'none');
     set(figAxes(i).YAxis, 'Color', 'none');
     set(figAxes(i), 'Color', 'none');
 end
-bg = [.7 .7 .7];
 set(t1,'Color', 'w');set(t2,'Color', 'w'); set(t3,'Color', 'w'); set(t4,'Color', 'w');set(t4.XAxis,'Color', 'k');
 
 set(h, 'Visible', 'on')
-title(t, [trialID,'_AllUnits_v23decomposed.mat'])
+title(t, TrialID);
 set(gcf, 'PaperPosition', [0 0 20 20]); %Position plot at left hand corner with width 5 and height 5.
 set(gcf, 'PaperSize', [20 20]); %Set the paper to have width 5 and height 5
-savefilename = fullfile(fileDir,strcat([trialID,'_AllUnits_v23decomposed'], '_CHECK.pdf'));
+savefilename = fullfile(fileDir,strcat([TrialID,'_AllUnits_Summary'], '.pdf'));
 print (h,'-dpdf',savefilename);
 close(h)
 end

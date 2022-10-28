@@ -4,7 +4,7 @@ clc
 %% Batch PreProcessing for the SNM lab
 
 % Must be in outermost directory containing all study subject data
-SubjectID = 'Flow06';
+SubjectID = 'TRDTest04';
 SubjectDir = cd;
 rootDir = fullfile(SubjectDir, SubjectID);
 
@@ -16,8 +16,6 @@ if isempty(filenames)
 end
 [~,fIdx] = sort({filenames(:).date});
 filenames = filenames(fIdx);
-filenames = filenames(3:end);
-filenames(7) = [];
 
 % Look for OTB files in subjects folder
 c3dFiles = dir(fullfile(rootDir, '*.c3d'));
@@ -37,9 +35,9 @@ c3dFiles(removeStatic,:) = [];
 %%%% These must be properly filled out for the processing to work
 %%%% automatically
 
-Stickers = 3;   % number of arrays
+Stickers = 4;   % number of arrays
 AuxChans = 1;   % 13 for biodex setup, 1 for treadmill
-MuscleList = {'TA', 'MG', 'Sol'}; % muscles tested, empty if multiple in skipped
+MuscleList = {'TA', 'MG', 'LG', 'Sol'}; % muscles tested, empty if multiple in skipped
 Operator = 6; % who is preprocessing this data
 TotalChans = Stickers * 64 + AuxChans;
 

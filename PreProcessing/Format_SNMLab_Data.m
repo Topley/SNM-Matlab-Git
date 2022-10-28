@@ -92,11 +92,11 @@ f = fopen(sigFile);
 ChannelMatrix = fread(f,[TotalChans+8,inf],'short');
 fclose all;
 %% Loop through and PreProcess EMG channels
-for ij = 1:ArrayNumber
+ for ij = 1:ArrayNumber
     
-    Muscle = MuscleList{ij} % select muscle for filename
-    
-    % skip preprocessing muscle if array is empty
+     Muscle = MuscleList{4} % select muscle for filename
+     
+     % skip preprocessing muscle if array is empty
     if isempty(Muscle)
         continue
     else
@@ -170,17 +170,18 @@ for ij = 1:ArrayNumber
             end
             
             % If not using Biodex, the file will be saved as this
-            otbEMG = data(TotalChans,:); % emg channel plugged into from analog out to Aux1 for synchronizing
+            otbEMG = data(TotalChans,:); 
+            otbEMG = ChannelMatrix(TotalChans,:);% emg channel plugged into from analog out to Aux1 for synchronizing
             trialLength = length(otbEMG);
             try
                 save(fullfile(toClusterFolder,saveid),'EMG', 'EMGall', 'fsamp', 'otbEMG', 'allbadchan', '-v7.3', '-nocompression');
             catch
                 save(fullfile(toClusterFolder,saveid),'EMG', 'EMGall', 'fsamp', 'allbadchan', '-v7.3', '-nocompression');
             end
-            
+           
             %% read c3d file
             % if kk file does not already exist and there is c3d data available
-            if ij == 1
+            if ij == 4
                 try
                     c3dStruct =  Read_C3D(FileNamePathC3D);
                     c3d_Data = c3dStruct.Data;
@@ -201,7 +202,7 @@ for ij = 1:ArrayNumber
                         % synchronize forceplates and plot synchronized EMG
                         % signals
                         tic
-                        [~, timeDiff, autoMatrix] = emg_sync_v3(otbEMG, c3d_Data.EMG, fsamp, fsampK, 1);
+                        [~, timeDiff, autoMatrix] = emg_sync_v3(otbEMG, c3d_Data.EMG, fsamp, fsampK, 0);
 %                         aFig = figure(99);
 %                         Autoax = axes('Parent',aFig);
 %                         clf(Autoax)
@@ -214,7 +215,7 @@ for ij = 1:ArrayNumber
                         upsampPlates = resampler(cell2mat(struct2cell(c3d_Data.ForcePlates)'), fsampK, fsamp, 0);
                         TimeStop = (length(zeroPadFront) + size(upsampPlates,1)) / fsamp;
                         
-%                         [FPData, COPData] = bertec_COP(upsampPlates, 5, 2048);
+                        [FPData, COPData] = bertec_COP(upsampPlates, 5, 2048);
                         % setup forceplate structure for easier data manipulation
                         fpLabels = fieldnames(c3d_Data.ForcePlates);
                         for ii = 1:size(fpLabels,1)
@@ -226,7 +227,7 @@ for ij = 1:ArrayNumber
                         % upsample COP to fsamp
                         upsampCOP = resampler(cell2mat(struct2cell(c3d_Data.COP)'), fsampK, fsamp, 0);
                         
-%                         copLabels = {'LeftX', 'LeftY','RightX','RightY','WeightedX','WeightedY'};
+                        copLabels = {'LeftX', 'LeftY','RightX','RightY','WeightedX','WeightedY'};
                         %setup COP structure for easier data manipulation
                         copLabels = fieldnames(c3d_Data.COP);
                         for jj = 1:size(copLabels,1)

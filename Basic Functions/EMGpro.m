@@ -38,9 +38,9 @@ if size(varargin,2) > 0
                         rmsL = filtVars{2}; %RMS length
                         rmsWindow = filtVars{3}; %filter window length
                     case 'butter'
-                        order = filtVars{1}; % filter order
-                        fs = filtVars{2}; % frequency cutoff/band
-                        band = filtVars{3}; % filter type - high, low, bandpass
+                        order = filtVars{2}; % filter order
+                        fs = filtVars{3}; % frequency cutoff/band
+                        band = filtVars{4}; % filter type - high, low, bandpass
                 end
                 
             otherwise
@@ -64,8 +64,9 @@ try
         case 'filtRMS'
             varargout{2} = sqrt(movmean(rms(EMGoutput .^2, rmsL), rmsWindow));
         case 'butter'
+          EMGoutput = sqrt(rms(EMGoutput .^2, 500));
             [b,a] = butter(order, fs, band);
-            varargout{2} = filtfilt(b, a, varargout{1});
+            varargout{2} = filtfilt(b, a,EMGoutput);
     end
 catch
     disp('Error in EMGpro Function')
