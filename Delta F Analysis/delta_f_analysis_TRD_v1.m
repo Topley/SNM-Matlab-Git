@@ -88,14 +88,6 @@ else
     title(clusterFile)
     
     
-    %%% Option to skip current file unless reprocessing another ramp
-    %     if ramp == 1
-    %         skip = input('skip trial? Yes or No: ','s');
-    %         if contains(skip,'y');
-    %             return
-    %         end
-    %     end
-    
     %%% start and end of Ramp
     
     Trialcut = input('Enter start and end of Contraction time (e.g., [5 30]): ');%[60 85];

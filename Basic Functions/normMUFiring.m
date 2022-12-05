@@ -1,6 +1,7 @@
 function [normFiring] = normMUFiring(MUFiring)
 %UNTITLED5 Summary of this function goes here
 %   Detailed explanation goes here
+fsamp = 2048;
 if size(MUFiring,2) > size(MUFiring,1)
     MUFiring = MUFiring';
 end 

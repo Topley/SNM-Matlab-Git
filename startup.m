@@ -22,6 +22,7 @@ set(0, 'DefaultFigurePosition', pos);
 
 % folder to begin in at startup
 cd(uigetdir('C:\Users\tuc43377\Desktop'))
+rmpath('C:\SNM Git Project\zOld Matlab Code')
 %cd('G:\TRD Hub');
 
 

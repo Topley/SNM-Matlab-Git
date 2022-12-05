@@ -59,6 +59,7 @@ for k = 1:length(ArrayChannels)
                 yticklabels([flip(channelNumber), ""]);
                 emgYAxis = get(gca,'ylim');
                 ylim([emgYAxis(1) 1000])
+                xlim([0 length(plotdata)./2048])
                 ylabel('Channel Number');
                 
                 %% Remove bad channels

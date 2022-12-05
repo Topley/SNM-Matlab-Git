@@ -12,7 +12,7 @@
 % The code has also been modified for simpler variable naming and debugging
 
 
-function [rere, dere] = Functional_DeltaF_Analysis(fullFileName, usermaxTorque, Auto, saveexcel, keepPics, ramp)
+function [deltaFData] = Functional_DeltaF_Analysis(fullFileName, usermaxTorque, Auto, saveexcel, keepPics, ramp)
 % Subfunction processing delta f values from decomposed MU spike trains.
 % Plot MU and delta f comparisons.
 % Save results as PDF and Excel files.
@@ -25,32 +25,30 @@ keepPics = keepPics(1);
 close all;
 
 %%% Set up directories - change if > 2 subdirectories
-[fileDir,filename,clusterFile, pdfdir] = setupDirectories(fullFileName, 'ramp');
+ [kkFile, clusterFile, decompFile, cleanFile, pdfDir] = Get_TrialFiles(fullFileName, 'ramp');
 
 % Open Decomposed MU File
-load(fullfile(fileDir,filename),'MUPulses', 'TraceFeedback')
-%load(filename, 'MUPulses', 'Torque', 'TorqueFeedback', 'EMGFeedback');
-Tableaumap = Tableau;   % colormap if user doesn't have predefined colormap
+cleanVars = matfile(cleanFile);
+MUPulses = cleanVars.MUPulses;
+
+c = colormap;   % colormap if user doesn't have predefined colormap
 
 try
-    load(fullfile(fileDir,clusterFile), 'fsamp', 'Torque');
-    temp = load(fullfile(fileDir,clusterFile), 'JR3Mz');
-    TorqueFeedback = temp.JR3Mz;
+    clusterVars = matfile(clusterFile);
+    emgS = clusterVars.EMG;
+    EMGFeedback = EMGpro(emgS, 'filter', {'butter', 2, 25, 'high'});
 end
 
 try
-    EMGFeedback = [];
-    load(fullfile(fileDir,clusterFile), 'EMG');
+    kkVars = matfile(kkFile);
+    copS = kkVars.COP;
+    cpAP = copS.WeightedY;
+     unpadAP = cpAP ~= 0;
+    paddAP = cpAP == 0;
+    offset = min(cpAP(unpadAP));
+    cpAP(paddAP) = offset;
+    TorqueFeedback = cpAP;
 end
-
-absRawEMG = abs(EMG(27,:));
-rectifiedEMG = absRawEMG-mean(absRawEMG(1:fsamp));
-rmsEMG = rms(rectifiedEMG, 500);
-EMGFeedback = movmean(rmsEMG, fsamp);
-EMGFeedback = EMGFeedback-mean(EMGFeedback(1:fsamp));
-fs = 1/fsamp;
-[b,a] = butter(3,fs,'low');
-EMGthreshold = filtfilt(b,a,rmsEMG);
 
 %%%%% load agonist units
 [MUFiring] = SortUnits(MUPulses);

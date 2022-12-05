@@ -22,18 +22,31 @@ loop = 0;
 while stopLoop ~= 0
     
     loop = loop + 1;
-%     if loop > 127
-%         keyboard
-%     end
+    %     if loop > 127
+    %         keyboard
+    %     end
     fseek(fileID, blockLoop,'bof');
     groupInfo = fread(fileID, 2, 'int8', 'ieee-le');
+    
+    
     
     c3dStruct.Parameters.GroupID = [c3dStruct.Parameters.GroupID;groupInfo(2)];
     stopLoop = groupInfo(2);
     
     binaryParamName = fread(fileID, abs(groupInfo(1)), 'int8', 'ieee-le');
     groupParamName = char(binaryParamName');
-    c3dStruct.Parameters.GroupParamName{loop} = string(groupParamName);
+    if groupInfo(2) < 0
+        c3dStruct.Parameters.GroupName{loop} = groupParamName;
+c3dStruct.Parameters.GroupParamName{loop} = string(groupParamName);
+        Group = groupInfo(2);
+        GroupName = groupParamName;
+    elseif groupInfo(2) == -Group
+        c3dStruct.Parameters.GroupParamName{loop} = strcat(GroupName, '_', string(groupParamName));
+    elseif groupInfo(2) == 0
+        stopLoop = 0;
+    else
+        c3dStruct.Parameters.GroupParamName{loop} = string(groupParamName);
+    end
     
     nextGroup = fread(fileID, 1, 'int16', 'ieee-le');
     c3dStruct.Parameters.NextGroupParam = [c3dStruct.Parameters.NextGroupParam; nextGroup];
@@ -50,7 +63,7 @@ while stopLoop ~= 0
         dataType = dimData(1);
         numDim = dimData(2);
         c3dStruct.Parameters.DataType = [c3dStruct.Parameters.DataType ; double(dataType)];
-   
+        
         if numDim > 3
             paramStartDim = fread(fileID, numDim, 'int8', 'ieee-le');
             disp('Dimensions are too high - check Parameter dimension number')
@@ -78,28 +91,28 @@ while stopLoop ~= 0
         [ParamBinPosition,curParamsData] = extractParamData(fileID,param3D, numDim, dataType);
         paramDataMatrix{loop} = curParamsData;
         
-     elseif stopLoop == 0
-          dimData = fread(fileID, 2, 'int8', 'ieee-le');
+    elseif stopLoop == 0
+        dimData = fread(fileID, 2, 'int8', 'ieee-le');
         dataType = dimData(1);
         numDim = 0;
         c3dStruct.Parameters.DataType = [c3dStruct.Parameters.DataType ; double(dataType)];
         
-          curParamsData = fread(fileID, 1, 'int8', 'ieee-le');
-          paramDataMatrix{loop} = curParamsData;
+        curParamsData = fread(fileID, 1, 'int8', 'ieee-le');
+        paramDataMatrix{loop} = curParamsData;
         c3dStruct.Parameters.NumberDimensions{loop} = NaN;
         c3dStruct.Parameters.DimensionLength = {c3dStruct.Parameters.DimensionLength;NaN};
         c3dStruct.Parameters.DataType = [c3dStruct.Parameters.DataType;NaN];
     else
     end
     
- if stopLoop ~= 0
-    descriptSize = fread(fileID, 1, 'int8', 'ieee-le');
-    c3dStruct.Parameters.DescriptionSize = descriptSize(1);
-    groupParamDescript = fread(fileID, descriptSize(1), 'int8', 'ieee-le');
-    c3dStruct.Parameters.GroupParamDescription{loop} = char(groupParamDescript');
-    blockLoop = nextBlock;
- end 
- 
+    if stopLoop ~= 0
+        descriptSize = fread(fileID, 1, 'int8', 'ieee-le');
+        c3dStruct.Parameters.DescriptionSize = descriptSize(1);
+        groupParamDescript = fread(fileID, descriptSize(1), 'int8', 'ieee-le');
+        c3dStruct.Parameters.GroupParamDescription{loop} = char(groupParamDescript');
+        blockLoop = nextBlock;
+    end
+    
 end
 
 for k = 1:size(c3dStruct.Parameters.GroupParamName, 2)

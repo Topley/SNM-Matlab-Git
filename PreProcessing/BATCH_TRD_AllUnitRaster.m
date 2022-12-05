@@ -4,17 +4,17 @@ clc
 %% All Muscle Summary Raster Plots
 
 % Must be in outermost directory containing all study subject data
-SubjectID = 'TRDTest04';
-c = colormap;
+SubjectID = 'TRDTest05';
+c = Tableau;
 SubjectDir = cd;
 rootDir = fullfile(SubjectDir, SubjectID);
 kkFiles = dir(fullfile(rootDir,'kk files', '*.mat'));
 
-for i=1:length(kkFiles)
-% plotMUFiring    loads motor units from all decomposed files and variables
-% from toCluster files; plots raster of units, IDRs, average EMG, and some Treadmill Forces
-
-kkFile = fullfile(kkFiles(i).folder, kkFiles(i).name);
+for ii=1:length(kkFiles)
+    % plotMUFiring    loads motor units from all decomposed files and variables
+    % from toCluster files; plots raster of units, IDRs, average EMG, and some Treadmill Forces
+    
+    kkFile = fullfile(kkFiles(ii).folder, kkFiles(ii).name);
     [~, clusterFile, decompFile, cleanFile] = Get_TrialFiles(kkFile);
     
     [~, TrialID] = fileparts(kkFile);
@@ -29,6 +29,12 @@ kkFile = fullfile(kkFiles(i).folder, kkFiles(i).name);
     RightFz = fpS.RightFz;
     TimeDelay = kkVars.TimeDelay;
     TimeStop = kkVars.TimeStop;
+    
+    try
+        Markers = kkVars.Markers;
+        Sternum = -1.*Markers.STR(:,2);
+        Sternum = Sternum(1:end-1);
+    end
     
     unpadAP = RightFz ~= 0;
     paddAP = RightFz == 0;
@@ -55,9 +61,17 @@ kkFile = fullfile(kkFiles(i).folder, kkFiles(i).name);
     clusterMG = replace(clusterFile, 'kk', 'MG');
     varsMG = matfile(clusterMG);
     
-    decomposedTA = replace(decompFile, 'kk', 'TA');
-    decomposedSol = replace(decompFile, 'kk', 'Sol');
-    decomposedMG = replace(decompFile, 'kk', 'MG');
+    try
+        decomposedTA = replace(decompFile, 'kk', 'TA');
+    end
+    
+    try
+        decomposedSol = replace(decompFile, 'kk', 'Sol');
+    end
+    
+    try
+        decomposedMG = replace(decompFile, 'kk', 'MG');
+    end
     cleanTA = replace(cleanFile, 'kk', 'TA');
     cleanSol = replace(cleanFile, 'kk', 'Sol');
     cleanMG = replace(cleanFile, 'kk', 'MG');
@@ -67,148 +81,149 @@ kkFile = fullfile(kkFiles(i).folder, kkFiles(i).name);
         TAPulses = unitsTA.MUPulses;
         TAFiring = SortUnits(TAPulses);
     catch
-        unitsTA = matfile(decomposedTA);
-        TAPulses = unitsTA.MUPulses;
-        TAFiring = SortUnits(TAPulses);
-    end 
+        try
+            unitsTA = matfile(decomposedTA);
+            TAPulses = unitsTA.MUPulses;
+            TAFiring = SortUnits(TAPulses);
+        end
+    end
     
     try
         unitsSol = matfile(cleanSol);
         SolPulses = unitsSol.MUPulses;
         SolFiring = SortUnits(SolPulses);
     catch
-        unitsSol = matfile(decomposedSol);
-        SolPulses = unitsSol.MUPulses;
-        SolFiring = SortUnits(SolPulses);
-    end 
+        try
+            unitsSol = matfile(decomposedSol);
+            SolPulses = unitsSol.MUPulses;
+            SolFiring = SortUnits(SolPulses);
+        end
+    end
     
     try
         unitsMG = matfile(cleanMG);
         MGPulses = unitsMG.MUPulses;
         MGFiring = SortUnits(MGPulses);
     catch
-        unitsMG = matfile(decomposedMG);
-        MGPulses = unitsMG.MUPulses;
-        MGFiring = SortUnits(MGPulses);
-    end 
+        try
+            unitsMG = matfile(decomposedMG);
+            MGPulses = unitsMG.MUPulses;
+            MGFiring = SortUnits(MGPulses);
+        end
+    end
+    
     
     Sol_EMG = varsSol.EMG;
-    MG_EMG = varsMG.EMG;
-    TA_EMG = varsTA.EMG;
-    
-     % debias all EMG channels
     Sol_EMG = Sol_EMG - mean(Sol_EMG, 2);
-    MG_EMG = MG_EMG - mean(MG_EMG, 2);
-    TA_EMG = TA_EMG - mean(TA_EMG, 2);
-    
-    % mean of all EMG channels after rectification
     SOL_rectified=abs(Sol_EMG);
     Sol_EMG=mean(SOL_rectified,1);
     
+    MG_EMG = varsMG.EMG;
     MG_rectified=abs(MG_EMG);
     MG_EMG=mean(MG_rectified,1);
+    MG_EMG = MG_EMG - mean(MG_EMG, 2);
     
+    TA_EMG = varsTA.EMG;
+    TA_EMG = TA_EMG - mean(TA_EMG, 2);
     TA_rectified=abs(TA_EMG);
     TA_EMG=mean(TA_rectified,1);
+    timeEMG = [0:length(copAP)-1]./fsamp;
+    copTime = timeEMG;
     
-    timeEMG = [0:length(TA_EMG)-1]./fsamp;
-copTime = timeEMG;
-
-h=figure('visible', 'off');
-t = tiledlayout(18, 1, 'TileSpacing', 'tight');
-t1 = nexttile([3,1]); t1.YAxis.TickLabels = []; t1.XAxis.Color = 'none'; t1.YAxis.Color = 'none';
-t2 = nexttile([5,1]); t2.YAxis.TickLabels = []; t2.XAxis.Color = 'none'; t2.YAxis.Color = 'none';
-t3 = nexttile([5,1]); t3.YAxis.TickLabels = []; t3.XAxis.Color = 'none'; t3.YAxis.Color = 'none';
-t4 = nexttile([5,1]); t4.YAxis.TickLabels = []; t4.YAxis.Color = 'none';
-
-ax1 = axes(t); ax1.Layout.Tile = 1; ax1.Layout.TileSpan = [3 1];
-z = zeros(size(copAP))';
-surface([timeEMG;timeEMG],[copAP';copAP'],[z;z],[timeEMG;timeEMG],...
-    'facecolor','none','edgecolor','interp','linewidth',1);
-colormap(ax1,parula);
-%ax2 = axes(t); ax2.Layout.Tile = 2;
-% plot(ax1,copTime, copAP, 'k')
-%plot(ax2,copTime, copML./100, 'Color', [.5 .5 .5])
-
-ax3 = axes(t); ax3.Layout.Tile = 4; ax3.Layout.TileSpan = [4 1];
-ax4 = axes(t); ax4.Layout.Tile = 7; ax4.Layout.TileSpan = [2 1];
-ax5 = axes(t); ax5.Layout.Tile = 9; ax5.Layout.TileSpan = [4 1];
-ax6 = axes(t); ax6.Layout.Tile = 12; ax6.Layout.TileSpan = [2 1];
-ax7 = axes(t); ax7.Layout.Tile = 14; ax7.Layout.TileSpan = [4 1];
-ax8 = axes(t); ax8.Layout.Tile = 17; ax8.Layout.TileSpan = [2 1];
-
-
-l1 = plot(ax4,timeEMG, TA_EMG, 'SeriesIndex', 7)
-emgC1 = get(l1, 'Color');
-l1.Color = [emgC1(1) emgC1(2) emgC1(3) .5];
-ylim(ax4, [0 max(TA_EMG)]);
-
-l2 = plot(ax6,timeEMG, MG_EMG, 'SeriesIndex', 9)
-emgC2 = get(l2, 'Color');
-l2.Color = [emgC2(1) emgC2(2) emgC2(3) .5];
-ylim(ax6, [0 max(MG_EMG)]);
-
-l3 = plot(ax8,timeEMG, Sol_EMG, 'SeriesIndex',1)
-emgC3 = get(l3, 'Color');
-l3.Color = [emgC3(1) emgC3(2) emgC3(3) .5];
-ylim(ax8, [0 max(Sol_EMG)]);
-
-try
-    for i = 1:size(TAFiring,2)
-        tsp = TAFiring{i}/fsamp;
-        spikes = numel(tsp);
-        tsp(tsp < 0) = [];
-        for j = 1:spikes
-            hold on
-            line(ax3,[tsp(j) tsp(j)], [-i -i-1], 'Color', c(8,:))
+    h=figure('visible', 'on');
+    t = tiledlayout(18, 1, 'TileSpacing', 'tight');
+    t1 = nexttile([3,1]); t1.YAxis.TickLabels = []; t1.XAxis.Color = 'none'; t1.YAxis.Color = 'none';
+    t2 = nexttile([5,1]); t2.YAxis.TickLabels = []; t2.XAxis.Color = 'none'; t2.YAxis.Color = 'none';
+    t3 = nexttile([5,1]); t3.YAxis.TickLabels = []; t3.XAxis.Color = 'none'; t3.YAxis.Color = 'none';
+    t4 = nexttile([5,1]); t4.YAxis.TickLabels = []; t4.YAxis.Color = 'none';
+    
+    ax1 = axes(t); ax1.Layout.Tile = 1; ax1.Layout.TileSpan = [3 1];
+    z = zeros(size(copAP))';
+    surface([timeEMG;timeEMG],[copAP';copAP'],[z;z],[timeEMG;timeEMG],...
+        'facecolor','none','edgecolor','interp','linewidth',1);
+    colormap(ax1,parula);
+    
+    hold(ax1, 'on');
+    plot(ax1, copTime, Sternum./10, 'k')
+    
+    ax3 = axes(t); ax3.Layout.Tile = 4; ax3.Layout.TileSpan = [4 1];
+    ax4 = axes(t); ax4.Layout.Tile = 7; ax4.Layout.TileSpan = [2 1];
+    ax5 = axes(t); ax5.Layout.Tile = 9; ax5.Layout.TileSpan = [4 1];
+    ax6 = axes(t); ax6.Layout.Tile = 12; ax6.Layout.TileSpan = [2 1];
+    ax7 = axes(t); ax7.Layout.Tile = 14; ax7.Layout.TileSpan = [4 1];
+    ax8 = axes(t); ax8.Layout.Tile = 17; ax8.Layout.TileSpan = [2 1];
+    
+    l1 = plot(ax4,timeEMG, TA_EMG, 'SeriesIndex', 7)
+    emgC1 = get(l1, 'Color');
+    l1.Color = [emgC1(1) emgC1(2) emgC1(3) .5];
+    ylim(ax4, [0 max(TA_EMG)]);
+    
+    l2 = plot(ax6,timeEMG, MG_EMG, 'SeriesIndex', 9)
+    emgC2 = get(l2, 'Color');
+    l2.Color = [emgC2(1) emgC2(2) emgC2(3) .5];
+    ylim(ax6, [0 max(MG_EMG)]);
+    
+    l3 = plot(ax8,timeEMG, Sol_EMG, 'SeriesIndex',1)
+    emgC3 = get(l3, 'Color');
+    l3.Color = [emgC3(1) emgC3(2) emgC3(3) .5];
+    ylim(ax8, [0 max(Sol_EMG)]);
+    
+    try
+        for i = 1:size(TAFiring,2)
+            tsp = TAFiring{i}/fsamp;
+            spikes = numel(tsp);
+            tsp(tsp < 0) = [];
+            for j = 1:spikes
+                hold on
+                line(ax3,[tsp(j) tsp(j)], [-i -i-1], 'Color', c(8,:))
+            end
         end
+        ylim(ax3, [-i-2 -1]);
     end
-    ylim(ax3, [-i-2 -1]);
-end
-
-try
-    for i = 1:size(SolFiring,2)
-        tsp = SolFiring{i}/fsamp;
-        tsp(tsp < 0) = [];
-        spikes = numel(tsp);
-        for j = 1:spikes
-            hold on
-            line(ax7,[tsp(j) tsp(j)], [-i -i-1], 'Color',  c(2,:))
+    
+    try
+        for i = 1:size(SolFiring,2)
+            tsp = SolFiring{i}/fsamp;
+            tsp(tsp < 0) = [];
+            spikes = numel(tsp);
+            for j = 1:spikes
+                hold on
+                line(ax7,[tsp(j) tsp(j)], [-i -i-1], 'Color',  c(2,:))
+            end
         end
+        ylim(ax7, [-i-2 -1]);
     end
-    ylim(ax7, [-i-2 -1]);
-end
-
-try
-    for i = 1:size(MGFiring,2)
-        tsp = MGFiring{i}/fsamp;
-        tsp(tsp < 0) = [];
-        spikes = numel(tsp);
-        for j = 1:spikes
-            line(ax5,[tsp(j) tsp(j)], [-i -i-1], 'Color', c(10,:))
+    
+    try
+        for i = 1:size(MGFiring,2)
+            tsp = MGFiring{i}/fsamp;
+            tsp(tsp < 0) = [];
+            spikes = numel(tsp);
+            for j = 1:spikes
+                line(ax5,[tsp(j) tsp(j)], [-i -i-1], 'Color', c(10,:))
+            end
         end
+        ylim(ax5, [-i-2 -1]);
     end
-    ylim(ax5, [-i-2 -1]);
-end
-xlabel(t,'Time');
-
-figAxes = findall(gcf,'type','axes');
-for i = 1:length(figAxes)
-    xlim(figAxes(i), [TimeDelay TimeStop])
-    set(figAxes(i), 'Color', 'none');
-    set(figAxes(i).XAxis, 'Color', 'none');
-    set(figAxes(i).YAxis, 'Color', 'none');
-    set(figAxes(i), 'Color', 'none');
-end
-set(t1,'Color', 'w');set(t2,'Color', 'w'); set(t3,'Color', 'w'); set(t4,'Color', 'w');set(t4.XAxis,'Color', 'k');
-
-set(h, 'Visible', 'on')
-title(t, TrialID);
-set(gcf, 'PaperPosition', [0 0 20 20]); %Position plot at left hand corner with width 5 and height 5.
-set(gcf, 'PaperSize', [20 20]); %Set the paper to have width 5 and height 5
-savefilename = fullfile(fileDir,strcat([TrialID,'_AllUnits_Summary'], '.pdf'));
-print (h,'-dpdf',savefilename);
-close(h)
+    xlabel(t,'Time');
+    
+    figAxes = findall(gcf,'type','axes');
+    for i = 1:length(figAxes)
+        xlim(figAxes(i), [TimeDelay TimeStop])
+        set(figAxes(i), 'Color', 'none');
+        set(figAxes(i).XAxis, 'Color', 'none');
+        set(figAxes(i).YAxis, 'Color', 'none');
+        set(figAxes(i), 'Color', 'none');
+    end
+    set(t1,'Color', 'w');set(t2,'Color', 'w'); set(t3,'Color', 'w'); set(t4,'Color', 'w');set(t4.XAxis,'Color', 'k');
+    
+    %set(h, 'Visible', 'on')
+    title(t, TrialID);
+    set(gcf, 'PaperPosition', [0 0 20 20]); %Position plot at left hand corner with width 5 and height 5.
+    set(gcf, 'PaperSize', [20 20]); %Set the paper to have width 5 and height 5
+    savefilename = fullfile(fileDir,strcat([TrialID,'_AllUnits_Summary'], '.pdf'));
+    print (h,'-dpdf',savefilename);
+    close(h)
 end
 
 

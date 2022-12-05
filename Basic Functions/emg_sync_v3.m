@@ -87,6 +87,6 @@ if chart == 1
     clf
     plot(t_fast,emg_fast, 'k');hold on;
     t_slow = (1 : length(slow_emg_upsampled)) / Fs_fast + Time_diff;
-    plot(t_slow, slow_emg_upsampled, 'SeriesIndex', 3); hold off;
+    plot(t_slow, slow_emg_upsampled, 'SeriesIndex', 2); hold off;
     legend('fast', 'slow')
 end
