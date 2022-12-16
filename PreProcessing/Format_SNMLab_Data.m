@@ -1,5 +1,5 @@
 
-function [] = Format_SNMLab_Data(FileNamePathOTB, FileNamePathC3D, staticS, MuscleList, TotalChans, AuxChans)
+function [] = Format_SNMLab_Data(MuscleList, TotalChans, AuxChans, varargin)
 
 %% DESCRIPTION
 
@@ -36,7 +36,29 @@ function [] = Format_SNMLab_Data(FileNamePathOTB, FileNamePathC3D, staticS, Musc
 fsamp = 2048;
 ArrayNumber = size(MuscleList,2);
 
+%Parsing through files
+for i = 1:nargin-3
+    fileLoop = varargin{i};
+    
+    if contains(class(fileLoop), 'MatFile')
+        staticS = varargin{i};
+        
+    else
+        [~, ~, ext] = fileparts(fileLoop);
+        
+        switch ext
+            case '.otb'
+                FileNamePathOTB = varargin{i};
+            case '.otb+'
+                FileNamePathOTB = varargin{i};
+            case '.c3d'
+                FileNamePathC3D = varargin{i};
+        end
+        
+    end
+end
 %% Make trial directories if not created
+
 % get OTB file information
 [fileDir, otbTrialname] = fileparts(FileNamePathOTB);
 
@@ -64,8 +86,8 @@ else
 end
 
 %% Extract data from OTB sig file
-%%%% opening the sig file is different with OTB+ files. The script is updated to open old and new OTB files %%%%
 
+%%%% opening the sig file is different with OTB+ files. The script is updated to open old and new OTB files %%%%
 sigFile = dir(fullfile(trialFolder,'*.sig'));
 sigFile = fullfile(sigFile.folder, sigFile.name);
 f = fopen(sigFile);
@@ -189,13 +211,18 @@ for ij = 1:ArrayNumber
                 % synchronize forceplates
                 tic
                 [~, timeDiff, autoMatrix] = emg_sync_v3(otbEMG, c3d_Data.EMG, fsamp, fsampK, 1);
+                fig2pos = get(gcf,'position');
+                fig2pos(1) = 0;
+                set(gcf,'position', fig2pos);
                 TimeDelay = timeDiff;
                 zeroPadFront = zeros(timeDiff*2048-1,1);
                 upsampPlates = resampler(cell2mat(struct2cell(c3d_Data.ForcePlates)'), fsampK, fsamp, 0);
                 TimeStop = (length(zeroPadFront) + size(upsampPlates,1)) / fsamp;
                 fpLabels = fieldnames(c3d_Data.ForcePlates);
+                reflect = size(zeroPadFront,1);
                 for ii = 1:size(fpLabels,1)
-                    paddedFPVar = [zeroPadFront; upsampPlates(:,ii) - mean(upsampPlates(1:100,ii))]; % zero pads front of signal
+                    reflectPad = flip(upsampPlates(1:reflect,ii));
+                    paddedFPVar = [reflectPad; upsampPlates(:,ii)] - mean(reflectPad(1:100,ii)); % zero pads front of signal
                     %paddedFPVar(length(paddedFPVar):trialLength)=0; % zero pads end of signal
                     ForcePlates.(fpLabels{ii}) = paddedFPVar(1:trialLength);
                 end
@@ -204,7 +231,8 @@ for ij = 1:ArrayNumber
                 copLabels = {'LeftX', 'LeftY','RightX','RightY','WeightedX','WeightedY'};
                 copLabels = fieldnames(c3d_Data.COP);
                 for jj = 1:size(copLabels,1)
-                    paddedCOPVar = [zeroPadFront; upsampCOP(:,jj)- mean(upsampCOP(1:100,jj))]; % zero pads front of signal
+                    reflectPad = flip(upsampPlates(1:reflect,ii));
+                    paddedCOPVar = [reflectPad; upsampCOP(:,jj)]- mean(reflectPad(1:100,jj)); % zero pads front of signal
                     %paddedCOPVar(length(paddedCOPVar) : trialLength) = 0; % zero pads end of signal
                     COP.(copLabels{jj}) = paddedCOPVar(1:trialLength);
                 end
@@ -225,7 +253,7 @@ for ij = 1:ArrayNumber
                 zeroFrontMarkers = repmat(zeroFront,1, markerNumber*3);
                 FrontPadMarkers = [zeroFrontMarkers;upsampMarkers];
                 %padBackMarkers = zeros(length(size(FrontPadMarkers,1):trialLength), 3);
-                
+               
                 loop = 0;
                 for kk = 1:3:(markerNumber*3)
                     loop = loop+1;

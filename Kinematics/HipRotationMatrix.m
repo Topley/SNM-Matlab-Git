@@ -4,6 +4,8 @@ function [RotMat, ASISBreadth, HipOrigin, JointCenter] = HipRotationMatrix(Marke
 %   The second argument is a cell array of the markers to build the matrix
 %   Markers shouold be entered in order of Lateral first, Medial second,
 %   and the offset marker third.
+
+TribalSys = [0,1,0; 1,0,0;0,0,1];
 rHipConstants = [-24; 32; -21]; % as a percentage
 lHipConstants = [-24; -32; -21]; % as a percentage
 
@@ -32,22 +34,20 @@ ASISBreadth = mean(Zvect);
 xRot = reshape(Xvect, 3,1, []);
 yRot = reshape(Yvect, 3,1, []);
 zRot = reshape(Zvect, 3,1, []);
-%RoomMatrix = [1,0,0; 0,0,-1; 0,1,0];
-%RotMatrix = cat(1,xRot, [reshape(Yvect,1, 3, frames);reshape(Zvect,1, 3, frames)]);
+
 RotMatrix = [xRot,yRot,zRot];
-HipRotMat = RotMatrix;
-%HipRotMat = pagemtimes(RoomMatrix, 'transpose', RotMatrix, 'none');
+HipRotMat = pagemtimes(RotMatrix, TribalSys);
 
 %HipRotMat = permute(RotMatrix,[2 1 3]);
 %HipRotMat = RotMatrix;
 RotMat.Pelvis = HipRotMat;
 
 locateRight = ASISBreadth .* (rHipConstants ./ 100)';
-rotateRight = pagemtimes(HipRotMat, 'none', locateRight, 'transpose');
+rotateRight = pagemtimes(HipRotMat, 'transpose', locateRight, 'transpose');
 transposeRight = permute(rotateRight, [3 1 2]);
 
 locateLeft = ASISBreadth .* (lHipConstants ./ 100)';
-rotateLeft = pagemtimes(HipRotMat, 'none', locateLeft, 'transpose');
+rotateLeft = pagemtimes(HipRotMat, 'transpose', locateLeft, 'transpose');
 transposeLeft = permute(rotateLeft, [3 1 2]);
 
 JointCenter.RHip = transposeRight + HipOrigin; 

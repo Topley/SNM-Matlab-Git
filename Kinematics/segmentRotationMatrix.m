@@ -3,7 +3,7 @@ function [segRotMat, JointCenter] = segmentRotationMatrix(segment, Markers, Join
 %   First argument specifies the segment the rotation matrix represents.
 %   The second argument is a cell array of the markers to build the matrix
 %   from
-
+TribalSys = [0,1,0; 1,0,0;0,0,1];
 segmentName = segment;
     
 switch segmentName
@@ -75,15 +75,13 @@ if ~contains(segmentName, 'Foot')
     Yvect = normr(axisY);
     Zvect = normr(axisZ);
     
-    frames = size(Xvect,1);
-    %xRot = reshape(Xvect,1, 3, frames);
     xRot = reshape(Xvect,3, 1, []);
     yRot = reshape(Yvect,3, 1, []);
     zRot = reshape(Zvect,3, 1, []);
     RotMat = [xRot,yRot,zRot];
-    %RoomMatrix = [1,0,0; 0,0,-1; 0,1,0];
-    %segRotMat = pagemtimes(RoomMatrix, 'none', RotMat, 'none');
-    segRotMat = RotMat;
+
+    segRotMat = pagemtimes(RotMat, TribalSys);
+    %segRotMat = RotMat;
     %RotMat = cat(1,xRot, [reshape(Yvect,1, 3, frames);reshape(Zvect,1, 3, frames)]);
     %segRotMat = permute(RotMat,[2 1 3]);
 else
@@ -96,12 +94,11 @@ else
     Yvect = normr(axisY);
     Zvect = normr(axisZ);
     
-    RoomMatrix = [1,0,0; 0,0,-1; 0,1,0];
     xRot = reshape(Xvect,3, 1, []);
     yRot = reshape(Yvect,3, 1, []);
     zRot = reshape(Zvect,3, 1, []);
     RotMat = [xRot,yRot,zRot];
-    segRotMat = pagemtimes(RoomMatrix, 'none', RotMat, 'none');
+    segRotMat = pagemtimes(RotMat, TribalSys);
 end
 
 end

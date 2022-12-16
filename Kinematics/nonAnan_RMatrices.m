@@ -3,7 +3,7 @@ function [staticMedialMarker, localLateralMarker, segmentR, JointCenter] = nonAn
 %   First argument specifies the segment the rotation matrix represents.
 %   The second argument is a cell array of the markers to build the matrix
 %   from
-
+TribalSys = [0,1,0; 1,0,0;0,0,1];
 segmentName = segment;
     
 switch segmentName
@@ -52,17 +52,15 @@ end
     yRot = reshape(Yvect,3, 1, []);
     zRot = reshape(Zvect,3, 1, []);
     RotMat = [xRot,yRot,zRot];
-    
-    %segmentR = permute(RotMat, [2,1,3]);
+    %segmentR = pagemtimes(RotMat , TribalSys); 
     segmentR = RotMat; 
     
     medialVect3D = medialMarker - distalMarker;
-    test = reshape(medialVect3D, 1, 3, []);
-    %rotatedMedialMarker = pagemtimes(RotMat, reshape(medialVect3D.', 3,1,[]));
-    rotatedMedialMarker = pagemtimes(test,RotMat);
-    tRotMat = reshape(pagetranspose(rotatedMedialMarker),[], 3);
-    medialVect = permute(rotatedMedialMarker,[3,2,1]);
-    staticMedialMarker = mean(medialVect,1);
+    medial3D = reshape(medialVect3D', [3, 1, size(medialVect3D,1)]);
+    rotatedMedialMarker = pagemtimes(segmentR, 'transpose',medial3D, 'none');
+    medialVect = reshape(pagetranspose(rotatedMedialMarker),[],3);
+    staticMedialMarker = mean(medialVect,1)';
+   
     localLateralMarker = lateralMarker - lateralMarker;
 
 end

@@ -11,16 +11,20 @@ if nargin > 3
 end
 limbs = lower(side);
 
-staticR = staticS.staticR;
+noRMedial = isfield(Markers, 'RMK');
+noLMedial = isfield(Markers, 'LMK');
 staticMarker = staticS.staticMarker;
 
 [RotMat, ASISBreadth, HipOrigin, JointCenter] = HipRotationMatrix(Markers);
 
 if contains(limbs, 'right')
+    if noRMedial == 0
     [~, ~, nonAnan_RThighR, ~] = nonAnan_RMatrices('RThigh', Markers, JointCenter);
-    rotatedRMK3d = pagemtimes(staticMarker.RMK, nonAnan_RThighR);
-    rotatedRMK = permute(rotatedRMK3d, [1,3,2]);
+    rotatedRMK3d = pagemtimes(nonAnan_RThighR,'transpose', staticMarker.RMK , 'none');
+    rotatedRMK = permute(rotatedRMK3d, [3,1,2]);
     Markers.RMK = rotatedRMK + Markers.RKNE;
+    end
+        
     JointCenter.RKnee = (Markers.RMK + Markers.RKNE)./2;
     
     [RThigh_R, JointCenter] = segmentRotationMatrix('RThigh', Markers, JointCenter);
@@ -45,6 +49,14 @@ if contains(limbs, 'right')
     JointAngle.RAnkleZ = RAnkleZ;
     
 else
+    if noLMedial == 0
+    [~, ~, nonAnan_LThighR, ~] = nonAnan_RMatrices('LThigh', Markers, JointCenter);
+    rotatedLMK3d = pagemtimes(nonAnan_LThighR,'transpose', staticMarker.LMK, 'transpose');
+    rotatedLMK = permute(rotatedLMK3d, [3,1,2]);
+    Markers.LMK = rotatedLMK + Markers.LKNE;
+    end 
+    JointCenter.LKnee = (Markers.LMK + Markers.LKNE)./2;
+    
     [LThigh_R, JointCenter] = segmentRotationMatrix('LThigh', Markers, JointCenter);
     RotMat.LThigh = LThigh_R;
     [LHipX, LHipY, LHipZ] = EulerAngles(RotMat.Pelvis, RotMat.LThigh);
