@@ -1,4 +1,6 @@
-clear all; close all; clc
+clear all
+close all
+clc
 %% Batch PreProcessing for the SNM lab
     % Must be in outermost directory containing all study subject data
 SubjectID = 'Func01';
