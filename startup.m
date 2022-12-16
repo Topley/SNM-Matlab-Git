@@ -17,13 +17,15 @@ set(0, 'DefaultFigureColorMap', tableau);
 set(0, 'DefaultAxesColorOrder', tableau);
 set(groot, 'DefaultAxesTickLabelInterpreter', 'none');
 
-pos = [1775 485 560 420];
+set(0,'units','pixels');
+screensize = get(0,'ScreenSize');
+
+pos = [screensize(3).*.75,   30, screensize(3).*.25,  screensize(3).*.25];
 set(0, 'DefaultFigurePosition', pos);
 
 % folder to begin in at startup
-cd(uigetdir('C:\Users\tuc43377\Desktop'))
+cd(uigetdir('C:'))
 rmpath('C:\SNM Git Project\zOld Matlab Code')
-%cd('G:\TRD Hub');
 
 
 end

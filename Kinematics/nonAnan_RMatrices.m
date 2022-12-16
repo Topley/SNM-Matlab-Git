@@ -52,7 +52,7 @@ end
     yRot = reshape(Yvect,3, 1, []);
     zRot = reshape(Zvect,3, 1, []);
     RotMat = [xRot,yRot,zRot];
-    %segmentR = pagemtimes(RotMat , TribalSys); 
+    segmentR = pagemtimes(RotMat , TribalSys); 
     segmentR = RotMat; 
     
     medialVect3D = medialMarker - distalMarker;

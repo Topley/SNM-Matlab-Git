@@ -40,7 +40,7 @@ ArrayNumber = size(MuscleList,2);
 for i = 1:nargin-3
     fileLoop = varargin{i};
     
-    if contains(class(fileLoop), 'MatFile')
+    if contains(class(fileLoop), 'MatFile') || isempty(fileLoop)
         staticS = varargin{i};
         
     else
@@ -111,7 +111,7 @@ for ij = 1:ArrayNumber
         
         if ij == 1
             TrialNum = input('Enter the trial type (e.g., mvic = 0, ramp = 2): ', 's');
-            if isempty(TrialNum) || length(TrialNum) > 1
+            if isempty(TrialNum) || length(TrialNum) < 1
                 TrialNum = input('Missing trial type, Enter the trial type: ');%[60 85];
             end
         end
@@ -120,12 +120,12 @@ for ij = 1:ArrayNumber
         [~,subjectID] = fileparts(fileDir);
         if ~contains(FileNamePathOTB, '_') && contains(FileNamePathOTB, '.otb+')
             newName = [otbTrialname,'00'];
-            saveid = strcat(subjectID, '_', newName(end-4:end), '_', Muscle, '_', num2str(TrialNum), '.mat');
+            saveid = strcat(subjectID, '_', newName(end-4:end), '_', Muscle, '_', TrialNum, '.mat');
         elseif contains(otbTrialname, '_')
             newName = erase(otbTrialname,'_');
-            saveid = strcat(subjectID, '_', newName(end-4:end), '_', Muscle, '_', num2str(TrialNum), '.mat');
+            saveid = strcat(subjectID, '_', newName(end-4:end), '_', Muscle, '_', TrialNum, '.mat');
         else
-            saveid = strcat(subjectID, '_', otbTrialname(end-4:end), '_', Muscle, '_', num2str(TrialNum), '.mat');
+            saveid = strcat(subjectID, '_', otbTrialname(end-4:end), '_', Muscle, '_', TrialNum, '.mat');
         end
         
         % mvic = 0, quiet stance = 1, forward lean = 2, backward lean = 3, emg PF = 4, emg DF = 5, markerF = 6, markerB = 7, los = 8
@@ -211,9 +211,9 @@ for ij = 1:ArrayNumber
                 % synchronize forceplates
                 tic
                 [~, timeDiff, autoMatrix] = emg_sync_v3(otbEMG, c3d_Data.EMG, fsamp, fsampK, 1);
-                fig2pos = get(gcf,'position');
-                fig2pos(1) = 0;
-                set(gcf,'position', fig2pos);
+                fig2pos = get(figure(101),'position');
+                fig2pos(1) = fig2pos(1)./2;
+                set(figure(99),'position', fig2pos);
                 TimeDelay = timeDiff;
                 zeroPadFront = zeros(timeDiff*2048-1,1);
                 upsampPlates = resampler(cell2mat(struct2cell(c3d_Data.ForcePlates)'), fsampK, fsamp, 0);
@@ -222,8 +222,7 @@ for ij = 1:ArrayNumber
                 reflect = size(zeroPadFront,1);
                 for ii = 1:size(fpLabels,1)
                     reflectPad = flip(upsampPlates(1:reflect,ii));
-                    paddedFPVar = [reflectPad; upsampPlates(:,ii)] - mean(reflectPad(1:100,ii)); % zero pads front of signal
-                    %paddedFPVar(length(paddedFPVar):trialLength)=0; % zero pads end of signal
+                    paddedFPVar = [reflectPad; upsampPlates(:,ii)] - mean(reflectPad(1:100)); % zero pads front of signal
                     ForcePlates.(fpLabels{ii}) = paddedFPVar(1:trialLength);
                 end
                 
@@ -231,9 +230,8 @@ for ij = 1:ArrayNumber
                 copLabels = {'LeftX', 'LeftY','RightX','RightY','WeightedX','WeightedY'};
                 copLabels = fieldnames(c3d_Data.COP);
                 for jj = 1:size(copLabels,1)
-                    reflectPad = flip(upsampPlates(1:reflect,ii));
-                    paddedCOPVar = [reflectPad; upsampCOP(:,jj)]- mean(reflectPad(1:100,jj)); % zero pads front of signal
-                    %paddedCOPVar(length(paddedCOPVar) : trialLength) = 0; % zero pads end of signal
+                    reflectPad = flip(upsampCOP(1:reflect,jj));
+                    paddedCOPVar = [reflectPad; upsampCOP(:,jj)]- mean(reflectPad(1:100)); % zero pads front of signal
                     COP.(copLabels{jj}) = paddedCOPVar(1:trialLength);
                 end
                 toc
@@ -247,13 +245,12 @@ for ij = 1:ArrayNumber
                 tic
                 % synchronize Marker data
                 upsampMarkers = resampler(cell2mat(struct2cell(c3d_Data.Markers)'), fsampM, fsamp, 0);
-                zeroFront = zeros(timeDiff * 2048 - 1, 1);
+                zeroFront = timeDiff * 2048 - 1;
                 markerLabels = fieldnames(c3d_Data.Markers);
                 markerNumber = size(markerLabels,1);
-                zeroFrontMarkers = repmat(zeroFront,1, markerNumber*3);
-                FrontPadMarkers = [zeroFrontMarkers;upsampMarkers];
-                %padBackMarkers = zeros(length(size(FrontPadMarkers,1):trialLength), 3);
-               
+                reflectMar = upsampMarkers([1:zeroFront], :);
+                FrontPadMarkers = [flip(reflectMar);upsampMarkers];
+                
                 loop = 0;
                 for kk = 1:3:(markerNumber*3)
                     loop = loop+1;
@@ -262,27 +259,29 @@ for ij = 1:ArrayNumber
                     Markers.(markerLabels{loop}) = fullMarkers(1:trialLength, :);%upsampMarkers(m1:m2, :); % zero pads front of signal
                 end
                 toc
+                
+                try
+                    [JointAngle, JointCenter] = ProcessKinematics('right', staticS, Markers);
+                end
+                
+                try
+                    [JointAngle, JointCenter] = ProcessKinematics('left', staticS, Markers, JointAngle, JointCenter);
+                end
+                
             catch
                 disp('no markers in this trials c3d file')
                 Markers = [];
+                
+                if ~exist('JointAngle', 'var')
+                    JointAngle = [];
+                end
+                
+                if ~exist('JointCenter', 'var')
+                    JointCenter = [];
+                end
             end
             
-            try
-                [JointAngle, JointCenter] = ProcessKinematics('right', staticS, Markers);
-            end
-            
-            try
-                [JointAngle, JointCenter] = ProcessKinematics('left', staticS, Markers, JointAngle, JointCenter);
-            catch
-                JointAngle = [];
-                JointCenter = [];
-            end
-            
-            try
-                save(fullfile(kkFolder, save_KKFile), 'c3d_Data', 'Markers', 'JointAngle', 'JointCenter', 'COP', 'ForcePlates', 'c3dEMG', 'autoMatrix', 'TimeDelay', 'TimeStop', '-v7.3','-nocompression');
-            catch
-                save(fullfile(kkFolder, save_KKFile), 'c3d_Data', 'COP', 'ForcePlates', 'c3dEMG', 'TimeDelay', 'TimeStop', '-v7.3','-nocompression');
-            end
+            save(fullfile(kkFolder, save_KKFile), 'c3d_Data', 'Markers', 'JointAngle', 'JointCenter', 'COP', 'ForcePlates', 'c3dEMG', 'autoMatrix', 'TimeDelay', 'TimeStop', '-v7.3','-nocompression');
         else
             
         end

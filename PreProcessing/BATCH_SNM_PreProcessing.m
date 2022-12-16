@@ -3,6 +3,7 @@ close all
 clc
 %% Batch PreProcessing for the SNM lab
     % Must be in outermost directory containing all study subject data
+    
 SubjectID = 'Func01';
 SubjectDir = cd;
 rootDir = fullfile(SubjectDir, SubjectID);
@@ -11,9 +12,10 @@ rootDir = fullfile(SubjectDir, SubjectID);
 staticMarkers = staticC3dPro(rootDir, staticC3D);
 
 %% KEY VARIABLES FOR PROCESSING 
-Stickers = 3;   % number of arrays
+
 AuxChans = 1;   % 13 for biodex setup, 1 for treadmill
-MuscleList = {'TA', 'MG', 'Sol'}; % muscles tested, empty if multiple in skipped
+MuscleList = {'TA', 'MG', 'LG', 'Sol'}; % muscles tested, empty if multiple in skipped
+Stickers = length(MuscleList);   % number of arrays
 TotalChans = Stickers * 64 + AuxChans;
 
 %% loop through files for preprocessing

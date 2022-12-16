@@ -20,7 +20,7 @@ staticMarker = staticS.staticMarker;
 if contains(limbs, 'right')
     if noRMedial == 0
     [~, ~, nonAnan_RThighR, ~] = nonAnan_RMatrices('RThigh', Markers, JointCenter);
-    rotatedRMK3d = pagemtimes(nonAnan_RThighR,'transpose', staticMarker.RMK , 'none');
+    rotatedRMK3d = pagemtimes(nonAnan_RThighR,'none', staticMarker.RMK , 'none');
     rotatedRMK = permute(rotatedRMK3d, [3,1,2]);
     Markers.RMK = rotatedRMK + Markers.RKNE;
     end
