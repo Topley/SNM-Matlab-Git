@@ -3,16 +3,30 @@ function [rawMarkerData,rawAnalogData] = Extract_C3DData(DataMatrix, MarkerNumbe
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
+try
 points = MarkerNumber * 4 + AnalogNumber * AVRatio;
 sortPts = length(DataMatrix) / points;
 PointMatrix = reshape(DataMatrix,[],sortPts); 
 rawMarkerData = PointMatrix([1:MarkerNumber*4], :);
-resAnalogData = PointMatrix([MarkerNumber*4:end], :);
-resAnalogData(1,:) = [];
+catch
+    rawMarkerData = [];
+end
+
+try
+    if MarkerNumber < 1
+        resAnalogData = PointMatrix([1:end], :);
+    else
+        resAnalogData = PointMatrix([MarkerNumber*4:end], :);
+        resAnalogData(1,:) = [];
+    end 
 sortAnalog = AVRatio * size(resAnalogData,2);
 rawAnalogData = reshape(resAnalogData, [AnalogNumber, sortAnalog])';
+catch
+    rawAnalogData = [];
+end
 
 %%%% Old extraction code replaced by faster matrix operations %%%%
+%%% This code won't work without 
 
 % firstBin = (dataStartBin - 1) * 512;
 % 
